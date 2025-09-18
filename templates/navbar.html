@@ -17,14 +17,6 @@ TODO DEBE ESTAN EL NAVBAR.JS Y BASE.CSS
 </div>
 
 <div id="navbarBasicExample" class="navbar-menu">
-    <!-- Agrega un botón de cierre para móviles -->
-    <div class="navbar-end is-hidden-desktop">
-        <a role="button" class="navbar-item navbar-close" aria-label="close">
-            <span class="icon is-small">
-                <i class="fas fa-times"></i>
-            </span>
-        </a>
-    </div>
     <div class="navbar-start">
         {% if current_user.is_authenticated %}
             <a class="navbar-item" href="{{ url_for('home') }}">
@@ -63,6 +55,7 @@ TODO DEBE ESTAN EL NAVBAR.JS Y BASE.CSS
                     </span>
                 </button>
                 {% if current_user.is_authenticated %}
+                <hr>
                 <a class="button is-light" href="{{ url_for('logout') }}">
                     <span class="icon">
                         <i class="fas fa-sign-out-alt"></i>

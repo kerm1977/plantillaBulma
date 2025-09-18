@@ -66,19 +66,19 @@
                 </div>
             </div>
 
-            <div class="field is-grouped is-grouped-centered">
-                <div class="control">
-                    <button class="button is-warning is-rounded is-large" type="submit">
+            <div class="field is-grouped is-grouped-multiline is-justify-content-center">
+                <p class="control">
+                    <button class="button is-warning is-rounded is-fullwidth-mobile mb-3-mobile" type="submit">
                         <span class="icon"><i class="fas fa-save"></i></span>
                         <span>Guardar Cambios</span>
                     </button>
-                </div>
-                <div class="control">
-                    <a href="{{ url_for('usuarios') }}" class="button is-light is-rounded is-large">
+                </p>
+                <p class="control">
+                    <a href="{{ url_for('usuarios') }}" class="button is-light is-rounded is-fullwidth-mobile mb-3-mobile">
                         <span class="icon"><i class="fas fa-arrow-left"></i></span>
                         <span>Cancelar</span>
                     </a>
-                </div>
+                </p>
             </div>
         </form>
         {% else %}

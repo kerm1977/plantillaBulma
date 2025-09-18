@@ -10,7 +10,7 @@
 <h1 class="title has-text-centered has-text-warning">Mi Perfil</h1>
 {% if user and user.is_authenticated %}
 <div class="content has-text-centered">
-<p><strong>ID de usuario:</strong> {{ user.id }}</p>
+<!-- <p><strong>ID de usuario:</strong> {{ user.id }}</p> -->
 <p><strong>Nombre de usuario:</strong> {{ user.usuario }}</p>
 <p><strong>Nombre completo:</strong> {{ user.nombre | title }} {{ user.primer_apellido | title }} {{ user.segundo_apellido | title }}</p>
 <p><strong>Email:</strong> {{ user.email }}</p>
@@ -18,7 +18,7 @@
 <p><strong>Rol:</strong> {{ user.rol | title }}</p>
 </div>
 <div class="has-text-centered mt-5">
-<a href="{{ url_for('editar_usuario', user_id=user.id) }}" class="button is-warning is-rounded is-large">
+<a href="{{ url_for('editar_usuario', user_id=user.id) }}" class="button is-warning is-rounded is-normal is-fullwidth-mobile">
 <span class="icon"><i class="fas fa-edit"></i></span>
 <span>Editar mi perfil</span>
 </a>
