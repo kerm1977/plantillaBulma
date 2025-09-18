@@ -106,7 +106,7 @@ def add_new_user(form_data):
             counter += 1
         
         # Encriptar la contraseña
-        hashed_password = generate_password_hash(password).decode('utf-8')
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         
         try:
             # Ahora, insertar el usuario con el nombre de usuario ya validado
@@ -205,7 +205,7 @@ def verify_user(user_input, password):
         
         if user_data:
             # Compara la contraseña encriptada
-            if check_password_hash(user_data['password'], password):
+            if bcrypt.check_password_hash(user_data['password'], password):
                 return user_data
         
         return None

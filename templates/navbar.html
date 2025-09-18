@@ -14,6 +14,14 @@
     </div>
 
     <div id="navbarBasicExample" class="navbar-menu">
+        <!-- Agrega un botón de cierre para móviles -->
+        <div class="navbar-end is-hidden-desktop">
+            <a role="button" class="navbar-item navbar-close" aria-label="close">
+                <span class="icon is-small">
+                    <i class="fas fa-times"></i>
+                </span>
+            </a>
+        </div>
         <div class="navbar-start">
             {% if current_user.is_authenticated %}
                 <a class="navbar-item" href="{{ url_for('home') }}">
@@ -62,61 +70,3 @@
         </div>
     </div>
 </nav>
-
-<script>
-    // Lógica del menú de hamburguesa
-    document.addEventListener('DOMContentLoaded', () => {
-        const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
-        if ($navbarBurgers.length > 0) {
-            $navbarBurgers.forEach(el => {
-                el.addEventListener('click', () => {
-                    const target = el.dataset.target;
-                    const $target = document.getElementById(target);
-                    el.classList.toggle('is-active');
-                    $target.classList.toggle('is-active');
-                });
-            });
-        }
-    });
-
-    // Lógica para el cambio de tema
-    document.addEventListener('DOMContentLoaded', () => {
-        const themeSwitcher = document.getElementById('theme-switcher');
-        const body = document.body;
-        const icon = themeSwitcher.querySelector('.icon i');
-
-        // Función para aplicar el tema guardado
-        const applyTheme = (theme) => {
-            if (theme === 'dark') {
-                body.classList.add('is-dark-mode');
-                icon.classList.remove('fa-sun');
-                icon.classList.add('fa-moon');
-            } else {
-                body.classList.remove('is-dark-mode');
-                icon.classList.remove('fa-moon');
-                icon.classList.add('fa-sun');
-            }
-        };
-
-        // Cargar el tema desde localStorage
-        const savedTheme = localStorage.getItem('is-dark-mode');
-        if (savedTheme === 'true') {
-            applyTheme('dark');
-        } else {
-            applyTheme('light');
-        }
-
-        // Event listener para el botón
-        themeSwitcher.addEventListener('click', () => {
-            if (body.classList.contains('is-dark-mode')) {
-                // Cambiar a tema claro
-                applyTheme('light');
-                localStorage.setItem('is-dark-mode', 'false');
-            } else {
-                // Cambiar a tema oscuro
-                applyTheme('dark');
-                localStorage.setItem('is-dark-mode', 'true');
-            }
-        });
-    });
-</script>
