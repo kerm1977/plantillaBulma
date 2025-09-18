@@ -1,0 +1,35 @@
+/* Variables para el footer */
+:root {
+    --footer-background: #f5f5f5;
+    --footer-text: #4a4a4a;
+    --link-color: #3273dc;
+}
+
+body.is-dark-mode {
+    --footer-background: #2b2b2b;
+    --footer-text: #f5f5f5;
+    --link-color: #48c78e;
+}
+
+/* Aplicar transiciones para un cambio de tema agradable */
+.footer {
+    transition: background-color 0.3s !important, color 0.3s !important;
+}
+
+.is-small-footer {
+    height: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Estilos de pie de página (footer) */
+.footer {
+    background-color: var(--footer-background) !important;
+    color: var(--footer-text) !important;
+}
+
+/* Estilo para los enlaces del footer */
+.footer a, .footer a:hover {
+    color: var(--link-color) !important;
+}
