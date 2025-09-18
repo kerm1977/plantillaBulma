@@ -1,65 +1,85 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
 
-{% block title %}Ver Usuarios{% endblock %}
-
-{% block content %}
-<div class="container mt-6">
-    <h1 class="title has-text-centered has-text-black">Lista de Usuarios</h1>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="notification is-{{ category }} is-light is-rounded mb-4">
-                <button class="delete"></button>
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
-    {% endwith %}
-    
-    {% if users %}
-    <div class="table-container">
-        <table class="table is-striped is-hoverable is-fullwidth">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nombre de Usuario</th>
-                    <th>Nombre Completo</th>
-                    <th>Email</th>
-                    <th>Teléfono</th>
-                    <th>Rol</th>
-                    <th class="has-text-centered">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.nombre | title }} {{ user.primer_apellido | title }} {{ user.segundo_apellido | title }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>{{ user.telefono }}</td>
-                    <td>{{ user.rol | title }}</td>
-                    <td class="has-text-centered">
-                        <a href="{{ url_for('detalle_usuarios', user_id=user.id) }}" class="button is-small is-info is-rounded" title="Ver detalle">
-                            <span class="icon"><i class="fas fa-eye"></i></span>
-                        </a>
-                        <a href="{{ url_for('editar_usuarios', user_id=user.id) }}" class="button is-small is-warning is-rounded" title="Editar">
-                            <span class="icon"><i class="fas fa-edit"></i></span>
-                        </a>
-                        <a href="{{ url_for('borrar_usuario', user_id=user.id) }}" class="button is-small is-danger is-rounded" title="Borrar">
-                            <span class="icon"><i class="fas fa-trash-alt"></i></span>
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <div class="notification is-info is-light is-rounded has-text-centered">
-        No hay usuarios registrados.
-    </div>
-    {% endif %}
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista de Usuarios</title>
+<link rel="stylesheet" href="https://www.google.com/search?q=https://cdn.jsdelivr.net/npm/bulma%400.9.3/css/bulma.min.css">
+<link rel="stylesheet" href="https://www.google.com/search?q=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+body {
+background-color: #f5f5f5;
+}
+.container {
+margin-top: 2rem;
+}
+.table-container {
+overflow-x: auto;
+}
+</style>
+</head>
+<body>
+{% include 'navbar.html' %}
+<div class="container">
+<h1 class="title is-2 has-text-centered">¡Mira todos nuestros usuarios!</h1>
+<div class="table-container">
+<table class="table is-striped is-hoverable is-fullwidth">
+<thead>
+<tr>
+<th>ID</th>
+<th>Nombre</th>
+<th>Usuario</th>
+<th>Email</th>
+<th>Teléfono</th>
+<th>Rol</th>
+<th>Acciones</th>
+</tr>
+</thead>
+<tbody>
+{% for user in users %}
+<tr>
+<td>{{ user.id }}</td>
+<td>{{ user.nombre }} {{ user.primer_apellido }}</td>
+<td>{{ user.usuario }}</td>
+<td>{{ user.email }}</td>
+<td>{{ user.telefono }}</td>
+<td>{{ user.rol }}</td>
+<td>
+<div class="buttons is-small">
+<a href="{{ url_for('editar_usuario', user_id=user.id) }}" class="button is-info is-light">
+<span class="icon"><i class="fas fa-edit"></i></span>
+<span>Editar</span>
+</a>
+<form action="{{ url_for('eliminar_usuario', user_id=user.id) }}" method="POST" style="display:inline;">
+<button type="submit" class="button is-danger is-light" onclick="return confirm('¿De verdad quieres borrar a este usuario? ¡Piensalo bien!');">
+<span class="icon"><i class="fas fa-trash-alt"></i></span>
+<span>Eliminar</span>
+</button>
+</form>
 </div>
-{% endblock %}
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+// Lógica para el menú de hamburguesa
+const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+if ($navbarBurgers.length > 0) {
+$navbarBurgers.forEach(el => {
+el.addEventListener('click', () => {
+const target = el.dataset.target;
+const $target = document.getElementById(target);
+el.classList.toggle('is-active');
+$target.classList.toggle('is-active');
+});
+});
+}
+});
+</script>
+</body>
+</html>

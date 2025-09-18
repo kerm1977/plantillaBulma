@@ -3,29 +3,30 @@
 {% block title %}Mi Perfil{% endblock %}
 
 {% block content %}
+
 <div class="container mt-6">
-    <div class="columns is-centered">
-        <div class="column is-5">
-            <h1 class="title has-text-centered has-text-warning">Mi Perfil</h1>
-            {% if user %}
-            <div class="content has-text-centered">
-                <p><strong>ID de usuario:</strong> {{ user.id }}</p>
-                <p><strong>Nombre de usuario:</strong> {{ user.username }}</p>
-                <p><strong>Nombre completo:</strong> {{ user.nombre | title }} {{ user.primer_apellido | title }} {{ user.segundo_apellido | title }}</p>
-                <p><strong>Email:</strong> {{ user.email }}</p>
-                <p><strong>Teléfono:</strong> {{ user.telefono }}</p>
-                <p><strong>Rol:</strong> {{ user.rol | title }}</p>
-            </div>
-            <div class="has-text-centered mt-5">
-                <a href="{{ url_for('editar_usuarios', user_id=user.id) }}" class="button is-warning is-rounded is-large">
-                    <span class="icon"><i class="fas fa-edit"></i></span>
-                    <span>Editar mi perfil</span>
-                </a>
-            </div>
-            {% else %}
-            <p class="has-text-centered">No se pudo cargar la información del usuario.</p>
-            {% endif %}
-        </div>
-    </div>
+<div class="columns is-centered">
+<div class="column is-5">
+<h1 class="title has-text-centered has-text-warning">Mi Perfil</h1>
+{% if user and user.is_authenticated %}
+<div class="content has-text-centered">
+<p><strong>ID de usuario:</strong> {{ user.id }}</p>
+<p><strong>Nombre de usuario:</strong> {{ user.usuario }}</p>
+<p><strong>Nombre completo:</strong> {{ user.nombre | title }} {{ user.primer_apellido | title }} {{ user.segundo_apellido | title }}</p>
+<p><strong>Email:</strong> {{ user.email }}</p>
+<p><strong>Teléfono:</strong> {{ user.telefono }}</p>
+<p><strong>Rol:</strong> {{ user.rol | title }}</p>
+</div>
+<div class="has-text-centered mt-5">
+<a href="{{ url_for('editar_usuario', user_id=user.id) }}" class="button is-warning is-rounded is-large">
+<span class="icon"><i class="fas fa-edit"></i></span>
+<span>Editar mi perfil</span>
+</a>
+</div>
+{% else %}
+<p class="has-text-centered">No se pudo cargar la información del usuario.</p>
+{% endif %}
+</div>
+</div>
 </div>
 {% endblock %}

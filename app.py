@@ -34,123 +34,186 @@ login_manager.login_message = 'Por favor, inicia sesión para acceder a esta pá
 DB_PATH = 'database/db.db'
 
 def get_db_connection():
-    """Establece y retorna una conexión a la base de datos SQLite."""
+    """
+    Establece una conexión a la base de datos SQLite y configura el acceso a las filas por nombre.
+    
+    Returns:
+        sqlite3.Connection: El objeto de conexión.
+    """
     # Asegúrate de que el directorio de la base de datos existe
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    
     conn = sqlite3.connect(DB_PATH)
-    # Configura la conexión para que retorne filas como objetos de fila (acceso por nombre de columna)
     conn.row_factory = sqlite3.Row
     return conn
 
 # ----------------------------------------------------
-#               Gestión de Usuarios (Flask-Login)
+#               Clase de Usuario para Flask-Login
 # ----------------------------------------------------
 
+class User(UserMixin):
+    """
+    Clase de modelo para el usuario, compatible con Flask-Login.
+    """
+    def __init__(self, user_data):
+        self.id = user_data['id']
+        self.nombre = user_data['nombre']
+        self.primer_apellido = user_data['primer_apellido']
+        self.segundo_apellido = user_data['segundo_apellido']
+        self.usuario = user_data['usuario']
+        self.email = user_data['email']
+        self.telefono = user_data['telefono']
+        self.rol = user_data['rol']
+        
+    @staticmethod
+    def get(user_id):
+        """
+        Método estático para cargar un usuario desde la base de datos.
+        """
+        user_data = user_module.find_user_by_id(user_id)
+        if user_data:
+            return User(user_data)
+        return None
+        
 @login_manager.user_loader
 def load_user(user_id):
     """
-    Carga un objeto de usuario basado en su ID para Flask-Login.
-    
-    Args:
-        user_id (str): El ID del usuario.
-        
-    Returns:
-        UserMixin: El objeto de usuario correspondiente, o None si no se encuentra.
+    Función de callback para recargar al usuario desde la sesión.
     """
-    user_data = user_module.find_user_by_id(user_id)
-    if user_data:
-        user = UserMixin()
-        user.id = user_data['id']
-        user.nombre = user_data['nombre']
-        user.primer_apellido = user_data['primer_apellido']
-        user.segundo_apellido = user_data['segundo_apellido']
-        user.username = user_data['usuario']
-        user.email = user_data['email']
-        user.telefono = user_data['telefono']
-        user.rol = user_data['rol']
-        return user
-    return None
+    return User.get(user_id)
 
 # ----------------------------------------------------
-#                    Rutas de la Aplicación
+#                     Rutas de la Aplicación
 # ----------------------------------------------------
 
 @app.route('/')
 def home():
-    """Ruta principal, redirige al login si no hay un usuario autenticado."""
-    if current_user.is_authenticated:
-        return redirect(url_for('perfil'))
-    return redirect(url_for('login'))
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    """Maneja el inicio de sesión del usuario."""
-    if current_user.is_authenticated:
-        return redirect(url_for('perfil'))
-    
-    if request.method == 'POST':
-        user_input = request.form.get('username_or_email_or_phone')
-        password = request.form.get('password')
-        
-        user_data = user_module.verify_user(user_input, password)
-        
-        if user_data:
-            user = load_user(user_data['id'])
-            login_user(user)
-            flash('Has iniciado sesión exitosamente.', 'success')
-            return redirect(url_for('perfil'))
-        else:
-            flash('Usuario, correo o contraseña incorrectos.', 'danger')
-            
-    return render_template('login.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    """Cierra la sesión del usuario actual."""
-    logout_user()
-    flash('Has cerrado sesión exitosamente.', 'info')
-    return redirect(url_for('login'))
+    """
+    Ruta principal que muestra la página de inicio.
+    """
+    return render_template('home.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """
-    Maneja el registro de nuevos usuarios.
-    
-    Después de un registro exitoso, redirige al usuario a la página de login.
+    Ruta para el registro de nuevos usuarios.
     """
     if request.method == 'POST':
-        # Llama a la función de registro de users.py para manejar la lógica
-        new_user = user_module.add_new_user(request.form)
-        if isinstance(new_user, str):
-            flash(new_user, 'danger')
+        # Añade un nuevo usuario usando la función del módulo users
+        result = user_module.add_new_user(request.form)
+        
+        if isinstance(result, str):
+            # Si add_new_user retorna una cadena, es un error
+            flash(result, 'danger')
         else:
-            flash(f"¡Usuario {new_user['usuario']} registrado con éxito! Ahora puedes iniciar sesión.", 'success')
+            # Si retorna el usuario, el registro fue exitoso
+            flash('¡Registro exitoso! Por favor, inicia sesión.', 'success')
             return redirect(url_for('login'))
             
     return render_template('register.html')
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """
+    Ruta para el inicio de sesión.
+    """
+    if current_user.is_authenticated:
+        return redirect(url_for('perfil'))
+
+    if request.method == 'POST':
+        user_input = request.form.get('username_or_email_or_phone')
+        password = request.form.get('password')
+        
+        # Limpia cualquier espacio en blanco en la contraseña
+        password = password.strip()
+
+        # Llama a la función de verificación genérica en el módulo de users
+        user_data = user_module.verify_user(user_input, password)
+        
+        if user_data:
+            user_obj = User(user_data)
+            login_user(user_obj)
+            return redirect(url_for('perfil'))
+        else:
+            flash('Usuario o contraseña incorrectos.', 'danger')
+            
+    return render_template('login.html')
+    
 @app.route('/perfil')
 @login_required
 def perfil():
     """
-    Muestra la página de perfil del usuario.
-    
-    Pasa el objeto `current_user` a la plantilla.
+    Ruta para la página de perfil del usuario.
     """
+    # Pasar el objeto current_user a la plantilla para que Jinja pueda acceder a sus atributos
     return render_template('perfil.html', user=current_user)
-
-@app.route('/usuarios/editar/<int:user_id>')
+    
+@app.route('/logout')
 @login_required
-def editar_usuarios(user_id):
+def logout():
     """
-    Ruta para editar la información de un usuario.
+    Cierra la sesión del usuario.
     """
-    # Lógica para cargar el formulario de edición, que veremos en un paso posterior.
-    # Por ahora, solo muestra un mensaje temporal.
-    flash('La funcionalidad de editar perfil estará disponible en un futuro paso.', 'info')
-    return redirect(url_for('perfil'))
+    logout_user()
+    return redirect(url_for('home'))
+
+@app.route('/usuarios')
+@login_required
+def usuarios():
+    """
+    Muestra la lista de usuarios.
+    Solo accesible para administradores.
+    """
+    if current_user.rol != 'Administrador':
+        flash('No tienes permiso para ver esta página.', 'danger')
+        return redirect(url_for('perfil'))
+        
+    users = user_module.find_all_users()
+    return render_template('ver_usuarios.html', users=users)
+
+@app.route('/usuarios/editar/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def editar_usuario(user_id):
+    """
+    Edita la información de un usuario.
+    Solo accesible para administradores.
+    """
+    if current_user.rol != 'Administrador':
+        flash('No tienes permiso para realizar esta acción.', 'danger')
+        return redirect(url_for('perfil'))
+        
+    user = user_module.find_user_by_id(user_id)
+    if not user:
+        flash('Usuario no encontrado.', 'danger')
+        return redirect(url_for('usuarios'))
+
+    if request.method == 'POST':
+        updated_user = user_module.update_user(user_id, request.form)
+        if isinstance(updated_user, str):
+            flash(updated_user, 'danger')
+        else:
+            flash('Usuario actualizado con éxito.', 'success')
+        return redirect(url_for('usuarios'))
+
+    return render_template('editar_usuario.html', user=user)
+
+@app.route('/usuarios/eliminar/<int:user_id>', methods=['POST'])
+@login_required
+def eliminar_usuario(user_id):
+    """
+    Elimina un usuario de la base de datos.
+    Solo accesible para administradores.
+    """
+    if current_user.rol != 'Administrador':
+        flash('No tienes permiso para realizar esta acción.', 'danger')
+        return redirect(url_for('perfil'))
+
+    success, message = user_module.delete_user_by_id(user_id)
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'danger')
+    
+    return redirect(url_for('usuarios'))
 
 # ----------------------------------------------------
 #               Ejecución de la Aplicación
@@ -158,9 +221,28 @@ def editar_usuarios(user_id):
 
 # Inicializa la base de datos y crea la tabla de usuarios antes de la primera solicitud
 with app.app_context():
-    conn = get_db_connection()
-    user_module.create_user_table(conn)
-    conn.close()
+    try:
+        conn = get_db_connection()
+        user_module.create_user_table(conn)
+        conn.close()
+
+        # Comprueba y actualiza el rol de superusuario
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users WHERE email = 'kenth1977@gmail.com'")
+            user_to_check = cursor.fetchone()
+            
+            if user_to_check and user_to_check['rol'] != 'Administrador':
+                print("El usuario kenth1977@gmail.com no es Administrador. Actualizando...")
+                user_module.make_admin_by_email('kenth1977@gmail.com')
+            conn.close()
+        except Exception as e:
+            print(f"Error al verificar y actualizar el rol de superusuario: {e}")
+            
+    except Exception as e:
+        print(f"Error al inicializar la base de datos: {e}")
+
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, port=8080)
+    app.run(debug=True, port=8080)

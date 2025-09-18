@@ -3,6 +3,7 @@ import sqlite3
 import re
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
+from app import bcrypt  # Importamos la instancia de bcrypt desde app.py
 
 # ----------------------------------------------------
 #              Funciones de la Base de Datos
@@ -41,6 +42,15 @@ def create_user_table(conn):
             with open(TABLE_CREATED_FLAG, 'w') as f:
                 f.write('Tabla creada')
                 
+            # Insertar un usuario administrador por defecto
+            # Este es un buen punto para que un usuario pueda probar la funcionalidad de administrador
+            hashed_password = bcrypt.generate_password_hash("admin123").decode('utf-8')
+            conn.execute(
+                "INSERT INTO users (nombre, primer_apellido, segundo_apellido, usuario, email, telefono, password, rol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                ('Admin', 'PrimerApellido', 'SegundoApellido', 'admin', 'admin@example.com', '12345678', hashed_password, 'Administrador')
+            )
+            conn.commit()
+
             print("Tabla 'users' creada o ya existe.")
         
     except sqlite3.Error as e:
@@ -61,7 +71,7 @@ def add_new_user(form_data):
     """
     try:
         # Importación diferida para evitar dependencia circular.
-        from app import get_db_connection, bcrypt 
+        from app import get_db_connection
         
         # Obtener y limpiar datos del formulario
         nombre = form_data.get('nombre', '').strip().title()
@@ -156,6 +166,131 @@ def find_user_by_id(user_id):
         print(f"Error al buscar usuario por ID: {e}")
         return None
 
+def find_all_users():
+    """
+    Busca todos los usuarios en la base de datos.
+    
+    Returns:
+        list: Una lista de objetos sqlite3.Row con todos los usuarios.
+    """
+    try:
+        from app import get_db_connection
+        conn = get_db_connection()
+        users_data = conn.execute("SELECT * FROM users").fetchall()
+        conn.close()
+        return users_data
+    except Exception as e:
+        print(f"Error al buscar todos los usuarios: {e}")
+        return []
+
+def update_user(user_id, form_data):
+    """
+    Actualiza la información de un usuario en la base de datos.
+    
+    Args:
+        user_id (int): El ID del usuario a actualizar.
+        form_data (dict): Diccionario con los datos del formulario de edición.
+        
+    Returns:
+        sqlite3.Row or str: El registro del usuario actualizado o un mensaje de error.
+    """
+    try:
+        from app import get_db_connection
+        conn = get_db_connection()
+        
+        nombre = form_data.get('nombre', '').strip().title()
+        primer_apellido = form_data.get('primer_apellido', '').strip().title()
+        segundo_apellido = form_data.get('segundo_apellido', '').strip().title()
+        email = form_data.get('email', '').strip().lower()
+        telefono = form_data.get('telefono', '').strip()
+        rol = form_data.get('rol', '').strip()
+        
+        # Validación de campos obligatorios
+        if not all([nombre, primer_apellido, segundo_apellido, email, telefono, rol]):
+            return "Error: Todos los campos son obligatorios."
+
+        # Validación de teléfono
+        if not re.match(r'^\d{8}$', telefono):
+            return "Error: El teléfono debe contener exactamente 8 dígitos numéricos."
+            
+        # Verificar si el correo o teléfono ya existen en otro usuario
+        existing_user = conn.execute("SELECT id FROM users WHERE (email = ? OR telefono = ?) AND id != ?", (email, telefono, user_id)).fetchone()
+        if existing_user:
+            return "Error: El correo electrónico o el teléfono ya están en uso por otro usuario."
+            
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE users SET nombre = ?, primer_apellido = ?, segundo_apellido = ?, email = ?, telefono = ?, rol = ? WHERE id = ?",
+            (nombre, primer_apellido, segundo_apellido, email, telefono, rol, user_id)
+        )
+        conn.commit()
+        
+        updated_user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        conn.close()
+        
+        return updated_user
+
+    except Exception as e:
+        print(f"Error al actualizar el usuario: {e}")
+        return "Error inesperado al actualizar el usuario. Por favor, inténtelo de nuevo más tarde."
+        
+def delete_user_by_id(user_id):
+    """
+    Elimina un usuario de la base de datos por su ID.
+    
+    Args:
+        user_id (int): El ID del usuario a eliminar.
+        
+    Returns:
+        tuple: (True, mensaje de éxito) si se elimina correctamente, o (False, mensaje de error) si falla.
+    """
+    try:
+        from app import get_db_connection
+        conn = get_db_connection()
+        
+        # No permitir la eliminación del único administrador
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users WHERE rol = 'Administrador'")
+        admin_count = cursor.fetchone()[0]
+
+        cursor.execute("SELECT rol FROM users WHERE id = ?", (user_id,))
+        user_rol = cursor.fetchone()
+        if user_rol and user_rol['rol'] == 'Administrador' and admin_count == 1:
+            conn.close()
+            return False, 'No puedes eliminar el único usuario con rol de Administrador.'
+        
+        result = conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+        conn.close()
+        
+        if result.rowcount == 1:
+            return True, 'Usuario eliminado exitosamente.'
+        else:
+            return False, 'Usuario no encontrado.'
+    except Exception as e:
+        print(f"Error al eliminar usuario: {e}")
+        return False, 'Error inesperado al eliminar el usuario.'
+
+def find_user_by_id(user_id):
+    """
+    Busca un usuario en la base de datos por su ID.
+    
+    Args:
+        user_id (int): El ID del usuario.
+        
+    Returns:
+        sqlite3.Row or None: El registro del usuario si se encuentra, de lo contrario None.
+    """
+    try:
+        from app import get_db_connection
+        conn = get_db_connection()
+        user_data = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        conn.close()
+        return user_data
+    except Exception as e:
+        print(f"Error al buscar usuario por ID: {e}")
+        return None
+
 def verify_user(user_input, password):
     """
     Verifica las credenciales de inicio de sesión de un usuario.
@@ -181,7 +316,6 @@ def verify_user(user_input, password):
         # Usar expresiones regulares para determinar el tipo de entrada
         is_email = re.match(r'^[^@]+@[^@]+\.[^@]+$', user_input)
         is_phone = re.match(r'^\d{8}$', user_input)
-        is_username = not (is_email or is_phone)
         
         # Preparar la consulta de la base de datos basada en el tipo de entrada
         query = ""
@@ -192,7 +326,7 @@ def verify_user(user_input, password):
         elif is_phone:
             query = "SELECT * FROM users WHERE telefono = ?"
             params = (user_input,)
-        elif is_username:
+        else: # Si no es un email o un teléfono, se asume que es un nombre de usuario
             query = "SELECT * FROM users WHERE usuario = ?"
             params = (user_input.lower(),)
         
@@ -200,7 +334,6 @@ def verify_user(user_input, password):
             return None
             
         user_data = cursor.execute(query, params).fetchone()
-        
         conn.close()
         
         if user_data:
@@ -213,3 +346,35 @@ def verify_user(user_input, password):
     except Exception as e:
         print(f"Error al verificar el usuario: {e}")
         return None
+
+def make_admin_by_email(email):
+    """
+    Convierte a un usuario existente en administrador buscándolo por correo electrónico.
+    
+    Args:
+        email (str): El correo electrónico del usuario a convertir.
+        
+    Returns:
+        tuple: (True, mensaje de éxito) si la actualización es exitosa, 
+               o (False, mensaje de error) si el usuario no es encontrado.
+    """
+    try:
+        from app import get_db_connection, bcrypt
+        conn = get_db_connection()
+        
+        # Buscar el usuario por su correo electrónico
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        
+        if user:
+            # Actualizar el rol del usuario a 'Administrador'
+            conn.execute("UPDATE users SET rol = 'Administrador' WHERE email = ?", (email,))
+            conn.commit()
+            conn.close()
+            return True, f'El usuario con el correo {email} ha sido convertido en Administrador.'
+        else:
+            conn.close()
+            return False, f'Error: No se encontró ningún usuario con el correo {email}.'
+            
+    except Exception as e:
+        print(f"Error al actualizar el rol del usuario: {e}")
+        return False, 'Error inesperado al intentar actualizar el rol del usuario.'
