@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
-# Importa las funciones del módulo de usuarios.py (se implementarán después)
+# Importa las funciones del módulo de users.py (se implementarán después)
 # Este módulo contendrá toda la lógica de la base de datos para los usuarios
 import users as user_module
 
@@ -32,71 +32,67 @@ login_manager.login_message = 'Por favor, inicia sesión para acceder a esta pá
 # ----------------------------------------------------
 
 # Variable para almacenar la ruta de la base de datos
-DB_NAME = 'db.db'
+# Terminantemente prohibido bajo ninguna circunstancia tocar la base de datos,
+# ni su nombre ni ubicación a menos que sea una orden directa.
+# Nunca se debe incrustar usuarios directos al código ni de prueba ni reales.
+DB_PATH = 'database/db.db'
 
 def get_db_connection():
-    """
-    Establece y devuelve una conexión a la base de datos.
+    """Establece y retorna una conexión a la base de datos SQLite."""
+    # Asegúrate de que el directorio de la base de datos existe
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     
-    Returns:
-        sqlite3.Connection: El objeto de conexión a la base de datos.
-    """
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row # Permite acceder a las columnas por nombre
+    conn = sqlite3.connect(DB_PATH)
+    # Configura la conexión para que retorne filas como objetos de fila (acceso por nombre de columna)
+    conn.row_factory = sqlite3.Row
     return conn
 
-def init_db():
-    """
-    Inicializa la base de datos y crea la tabla de usuarios si no existe.
-    """
-    conn = get_db_connection()
-    user_module.create_user_table(conn)
-    conn.close()
-
 # ----------------------------------------------------
-#               Clase de Usuario para Flask-Login
+#               Gestión de Usuarios (Flask-Login)
 # ----------------------------------------------------
-
-class User(UserMixin):
-    """
-    Clase de usuario para manejar las sesiones con Flask-Login.
-    """
-    def __init__(self, user_data):
-        self.id = user_data['id']
-        self.nombre = user_data['nombre']
-        self.primer_apellido = user_data['primer_apellido']
-        self.segundo_apellido = user_data['segundo_apellido']
-        self.usuario = user_data['usuario']
-        self.email = user_data['email']
-        self.telefono = user_data['telefono']
-        self.rol = user_data['rol']
 
 @login_manager.user_loader
 def load_user(user_id):
     """
-    Callback para recargar el objeto de usuario desde la ID de la sesión.
+    Carga un objeto de usuario basado en su ID para Flask-Login.
+    
+    Args:
+        user_id (str): El ID del usuario.
+        
+    Returns:
+        UserMixin: El objeto de usuario correspondiente, o None si no se encuentra.
     """
     user_data = user_module.find_user_by_id(user_id)
     if user_data:
-        return User(user_data)
+        user = UserMixin()
+        user.id = user_data['id']
+        user.nombre = user_data['nombre']
+        user.primer_apellido = user_data['primer_apellido']
+        user.segundo_apellido = user_data['segundo_apellido']
+        user.username = user_data['usuario']
+        user.email = user_data['email']
+        user.telefono = user_data['telefono']
+        user.rol = user_data['rol']
+        return user
     return None
 
 # ----------------------------------------------------
-#                  Rutas de la Aplicación
+#                    Rutas de la Aplicación
 # ----------------------------------------------------
 
 @app.route('/')
-def index():
-    """
-    Ruta de la página de inicio.
-    """
+def home():
+    """Ruta principal, redirige al login si no hay un usuario autenticado."""
+    if current_user.is_authenticated:
+        return redirect(url_for('perfil'))
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """
-    Maneja el inicio de sesión de los usuarios.
-    """
+    """Maneja el inicio de sesión del usuario."""
+    if current_user.is_authenticated:
+        return redirect(url_for('perfil'))
+    
     if request.method == 'POST':
         user_input = request.form.get('username_or_email_or_phone')
         password = request.form.get('password')
@@ -104,10 +100,10 @@ def login():
         user_data = user_module.verify_user(user_input, password)
         
         if user_data:
-            user = User(user_data)
+            user = load_user(user_data['id'])
             login_user(user)
             flash('Has iniciado sesión exitosamente.', 'success')
-            return redirect(url_for('home'))
+            return redirect(url_for('perfil'))
         else:
             flash('Usuario, correo o contraseña incorrectos.', 'danger')
             
@@ -130,36 +126,44 @@ def register():
     """
     if request.method == 'POST':
         # Llama a la función de registro de users.py para manejar la lógica
-        result = user_module.add_new_user(request.form)
-        if isinstance(result, str):
-            # Si se devuelve una cadena, el registro falló y el mensaje de error se muestra
-            flash(result, 'danger')
-            return render_template('register.html', form_data=request.form)
-        elif result:
-            # Si se devuelve un objeto de usuario, el registro fue exitoso
-            flash(f"¡Usuario {result['usuario']} registrado con éxito! Ahora puedes iniciar sesión.", 'success')
-            return redirect(url_for('login'))
+        new_user = user_module.add_new_user(request.form)
+        if isinstance(new_user, str):
+            flash(new_user, 'danger')
         else:
-            # En caso de un error genérico no manejado, se muestra un mensaje predeterminado
-            flash("Error al registrar el usuario. Por favor, verifica los datos.", 'danger')
+            flash(f"¡Usuario {new_user['usuario']} registrado con éxito! Ahora puedes iniciar sesión.", 'success')
+            return redirect(url_for('login'))
             
     return render_template('register.html')
 
-@app.route('/home')
+@app.route('/perfil')
 @login_required
-def home():
+def perfil():
     """
-    Ruta de la página principal (requiere inicio de sesión).
+    Muestra la página de perfil del usuario.
+    
+    Pasa el objeto `current_user` a la plantilla.
     """
-    return render_template('home.html')
+    return render_template('perfil.html', user=current_user)
+
+@app.route('/usuarios/editar/<int:user_id>')
+@login_required
+def editar_usuarios(user_id):
+    """
+    Ruta para editar la información de un usuario.
+    """
+    # Lógica para cargar el formulario de edición, que veremos en un paso posterior.
+    # Por ahora, solo muestra un mensaje temporal.
+    flash('La funcionalidad de editar perfil estará disponible en un futuro paso.', 'info')
+    return redirect(url_for('perfil'))
 
 # ----------------------------------------------------
 #               Ejecución de la Aplicación
 # ----------------------------------------------------
 
 if __name__ == '__main__':
-    # Este bloque solo se ejecuta al correr el script directamente
-    # Llama a init_db() para crear la base de datos y la tabla de usuarios
-    init_db()
-    # Ejecuta la aplicación en modo de depuración
-    app.run(debug=True, port=8080)
+    # Inicializa la base de datos y crea la tabla de usuarios
+    conn = get_db_connection()
+    user_module.create_user_table(conn)
+    conn.close()
+
+    app.run(debug=True, port="8080")

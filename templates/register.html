@@ -6,18 +6,8 @@
 <div class="container mt-6">
     <div class="columns is-centered">
         <div class="column is-5">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="notification is-{{ category }} is-light is-rounded mb-4">
-                <button class="delete"></button>
-                {{ message }}
-            </div>
-            {% endfor %}
-            {% endif %}
-            {% endwith %}
-            <div class="box p-6 has-background-white-ter">
-                <h1 class="title has-text-centered has-text-black">Registrarse</h1>
+            <div class="box p-6">
+                <h1 class="title has-text-centered">Registrarse</h1>
                 <form method="POST" action="{{ url_for('register') }}">
                     <div class="field">
                         <label class="label">Nombre</label>

@@ -62,59 +62,64 @@ def add_new_user(form_data):
 
         # Validación: El nombre y el primer apellido no pueden estar vacíos
         if not nombre or not primer_apellido:
-            print("Error: El nombre y el primer apellido no pueden estar vacíos.")
-            return "Error: El nombre y el primer apellido no pueden estar vacíos."
+            return "Error: El nombre y el primer apellido son obligatorios."
         
-        # Validación básica de datos
+        # Validación de campos obligatorios
         if not all([nombre, primer_apellido, segundo_apellido, email, telefono, password, verificar_password]):
-            print("Error: Todos los campos son obligatorios.")
             return "Error: Todos los campos son obligatorios."
 
         if password != verificar_password:
-            print("Error: Las contraseñas no coinciden.")
             return "Error: Las contraseñas no coinciden."
             
         # Validación de teléfono: solo números y 8 dígitos
         if not re.match(r'^\d{8}$', telefono):
-            print("Error: El teléfono debe contener exactamente 8 dígitos numéricos.")
             return "Error: El teléfono debe contener exactamente 8 dígitos numéricos."
-
-        # Generar nombre de usuario de forma automática
-        # Se toma la primera letra del nombre, el primer apellido completo y el segundo apellido completo
-        # Se añaden los últimos 4 dígitos del teléfono para hacerlo más único
-        username_part1 = nombre[0] if nombre else ''
-        username_part2 = primer_apellido.replace(' ', '')
-        username_part3 = segundo_apellido.replace(' ', '')
-        usuario = f"{username_part1}{username_part2}{username_part3}{telefono[-4:]}".lower()
-        
-        # Encriptar la contraseña
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        cursor.execute(
-            "INSERT INTO users (nombre, primer_apellido, segundo_apellido, usuario, email, telefono, password) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (nombre, primer_apellido, segundo_apellido, usuario, email, telefono, hashed_password)
-        )
-        conn.commit()
-        
-        # Obtener el registro del usuario recién insertado
-        user_id = cursor.lastrowid
-        new_user = cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-        
-        conn.close()
-        return new_user
+        # Generar nombre de usuario de forma automática con un sufijo incremental
+        base_username = f"{nombre[0]}{primer_apellido}{segundo_apellido}".lower()
+        username_to_check = base_username
+        counter = 1
 
-    except sqlite3.IntegrityError as e:
-        if "usuario" in str(e):
-            return "Error: El nombre de usuario ya está registrado."
-        elif "email" in str(e):
-            return "Error: El correo electrónico ya está registrado."
-        elif "telefono" in str(e):
-            return "Error: El teléfono ya está registrado."
-        else:
-            return "Error: El correo electrónico, usuario o teléfono ya están registrados."
+        while True:
+            # Comprobar si el nombre de usuario ya existe en la base de datos
+            cursor.execute("SELECT 1 FROM users WHERE usuario = ?", (username_to_check,))
+            if not cursor.fetchone():
+                # El nombre de usuario es único, podemos usarlo
+                break
+            # Si existe, agregar un número para intentar de nuevo
+            username_to_check = f"{base_username}{counter}"
+            counter += 1
+        
+        # Encriptar la contraseña
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        
+        try:
+            # Ahora, insertar el usuario con el nombre de usuario ya validado
+            cursor.execute(
+                "INSERT INTO users (nombre, primer_apellido, segundo_apellido, usuario, email, telefono, password) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (nombre, primer_apellido, segundo_apellido, username_to_check, email, telefono, hashed_password)
+            )
+            conn.commit()
+            
+            # Obtener el registro completo del usuario recién insertado
+            new_user = conn.execute("SELECT * FROM users WHERE usuario = ?", (username_to_check,)).fetchone()
+            
+            conn.close()
+            return new_user
+
+        except sqlite3.IntegrityError as e:
+            # Manejo de errores específico para email y teléfono
+            error_message = str(e)
+            if "email" in error_message:
+                return "Error: El correo electrónico ya está registrado."
+            elif "telefono" in error_message:
+                return "Error: El teléfono ya está registrado."
+            else:
+                print(f"Error de integridad inesperado: {e}")
+                return "Error inesperado al registrar el usuario. Por favor, inténtelo de nuevo más tarde."
     except Exception as e:
         print(f"Error inesperado al registrar el usuario: {e}")
         return "Error inesperado al registrar el usuario. Por favor, inténtelo de nuevo más tarde."
@@ -158,11 +163,31 @@ def verify_user(user_input, password):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Busca por usuario, email o teléfono
-        user_data = cursor.execute(
-            "SELECT * FROM users WHERE usuario = ? OR email = ? OR telefono = ?",
-            (user_input.lower(), user_input.lower(), user_input)
-        ).fetchone()
+        # Normalizar el input del usuario
+        user_input = user_input.strip()
+
+        # Usar expresiones regulares para determinar el tipo de entrada
+        is_email = re.match(r'^[^@]+@[^@]+\.[^@]+$', user_input)
+        is_phone = re.match(r'^\d{8}$', user_input)
+        is_username = not (is_email or is_phone)
+        
+        # Preparar la consulta de la base de datos basada en el tipo de entrada
+        query = ""
+        params = ()
+        if is_email:
+            query = "SELECT * FROM users WHERE email = ?"
+            params = (user_input.lower(),)
+        elif is_phone:
+            query = "SELECT * FROM users WHERE telefono = ?"
+            params = (user_input,)
+        elif is_username:
+            query = "SELECT * FROM users WHERE usuario = ?"
+            params = (user_input.lower(),)
+        
+        if not query:
+            return None
+            
+        user_data = cursor.execute(query, params).fetchone()
         
         conn.close()
         
