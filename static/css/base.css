@@ -11,8 +11,8 @@
     --button-text: #ffffff;
     --link-color: #3273dc;
     --link-hover-color: #363636;
-    --strong-text-color: #363636; /* Color de texto para <strong> en modo claro */
-    --label-color: #363636; /* Color de texto para <label> en modo claro */
+    --strong-text-color: #363636;
+    --label-color: #363636;
 }
 
 body.is-dark-mode {
@@ -27,109 +27,138 @@ body.is-dark-mode {
     --button-text: #1a1a1a;
     --link-color: #48c78e;
     --link-hover-color: #f5f5f5;
-    --strong-text-color: #ffabab; /* Color de texto para <strong> en modo oscuro */
-    --label-color: #ffabab; /* Color de texto para <label> en modo oscuro */
+    --strong-text-color: #ffabab;
+    --label-color: #ffabab;
 }
 
 /* Aplicar transiciones suaves para un cambio de tema agradable */
 html, body, .navbar, .footer, .button, .back-button, .back-to-top-button, .box {
-    transition: background-color 0.3s, color 0.3s;
+    transition: background-color 0.3s !important, color 0.3s !important;
 }
 
 /* Estilos para el botón de cambio de tema en la barra de navegación */
 .theme-toggle-button {
-    background-color: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    margin-left: 1rem;
-    color: var(--navbar-text);
+    background-color: transparent !important;
+    border: none !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    margin-left: 1rem !important;
+    color: var(--navbar-text) !important;
 }
-        
+
 /* Estilos para el botón de regresar */
 .back-button {
-    position: fixed;
-    bottom: 70px;
-    left: 20px;
-    z-index: 999;
-    width: 50px;
-    height: 50px;
-    background-color: var(--button-background);
-    color: var(--button-text);
-    border: none;
-    border-radius: 50%;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
+    position: fixed !important;
+    bottom: 70px !important;
+    left: 20px !important;
+    z-index: 999 !important;
+    width: 50px !important;
+    height: 50px !important;
+    background-color: var(--button-background) !important;
+    color: var(--button-text) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transition: opacity 0.3s !important, visibility 0.3s !important;
 }
 
 .back-button.is-visible {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 /* Estilos para el botón de volver arriba */
 .back-to-top-button {
-    position: fixed;
-    bottom: 70px;
-    right: 20px;
-    z-index: 999;
-    width: 50px;
-    height: 50px;
-    background-color: var(--button-background);
-    color: var(--button-text);
-    border: none;
-    border-radius: 50%;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
+    position: fixed !important;
+    bottom: 70px !important;
+    right: 20px !important;
+    z-index: 999 !important;
+    width: 50px !important;
+    height: 50px !important;
+    background-color: var(--button-background) !important;
+    color: var(--button-text) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transition: opacity 0.3s !important, visibility 0.3s !important;
 }
 
 .back-to-top-button.is-visible {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 /* Estilos globales y reutilizables */
 html {
-    background-color: var(--background-color);
+    background-color: var(--background-color) !important;
 }
 
 body {
-    background-color: var(--background-color);
-    color: var(--text-color);
-    transition: background-color 0.3s, color 0.3s;
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
+    transition: background-color 0.3s !important, color 0.3s !important;
 }
 
 .content a, .content a:hover {
-    color: var(--link-color);
+    color: var(--link-color) !important;
 }
 
 .content strong {
-    color: var(--strong-text-color);
+    color: var(--strong-text-color) !important;
 }
 
 .title, .subtitle {
-    color: var(--text-color);
+    color: var(--text-color) !important;
+}
+
+.title.has-text-warning {
+    color: var(--link-color) !important;
 }
 
 pre, code {
-    background-color: #dbdbdb;
-    color: #4a4a4a;
+    background-color: #dbdbdb !important;
+    color: #4a4a4a !important;
 }
 
 body.is-dark-mode pre, body.is-dark-mode code {
-    background-color: #4a4a4a;
-    color: #f5f5f5;
+    background-color: #4a4a4a !important;
+    color: #f5f5f5 !important;
 }
 
 .box {
     background-color: var(--card-background) !important;
-    color: var(--text-color);
+}
+
+/* Fuerza el color del texto para p y strong dentro de .box */
+.box p, .box strong, .box a {
+    color: var(--text-color) !important;
 }
 
 .label {
-    color: var(--label-color);
+    color: var(--label-color) !important;
+}
+
+/* Clases de utilidad */
+.is-relative {
+    position: relative !important;
+}
+
+.is-flex {
+    display: flex !important;
+}
+
+.is-align-items-center {
+    align-items: center !important;
+}
+
+.is-justify-content-center {
+    justify-content: center !important;
+}
+
+.mt-4 {
+    margin-top: 1.5rem !important;
 }
