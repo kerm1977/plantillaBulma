@@ -194,7 +194,8 @@ def editar_usuario(user_id):
             flash('Usuario actualizado con éxito.', 'success')
         return redirect(url_for('usuarios'))
 
-    return render_template('editar_usuario.html', user=user)
+    # Cambiado el nombre del archivo de plantilla de 'editar_usuario.html' a 'editar_usuarios.html'
+    return render_template('editar_usuarios.html', user=user)
 
 @app.route('/usuarios/eliminar/<int:user_id>', methods=['POST'])
 @login_required
