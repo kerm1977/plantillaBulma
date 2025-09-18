@@ -11,6 +11,7 @@ from app import bcrypt  # Importamos la instancia de bcrypt desde app.py
 
 # Archivo de bandera para verificar si la tabla ya fue creada
 TABLE_CREATED_FLAG = 'database/.table_users_created'
+SUPERUSER_EMAIL = 'kenth1977@gmail.com'
 
 def create_user_table(conn):
     """
@@ -219,6 +220,11 @@ def update_user(user_id, form_data):
             return "Error: El correo electrónico o el teléfono ya están en uso por otro usuario."
             
         cursor = conn.cursor()
+        
+        # No permitir el cambio de rol si es el superusuario fijo
+        if find_user_by_id(user_id)['email'] == SUPERUSER_EMAIL and rol != 'Superusuario':
+            return "Error: No se puede cambiar el rol del superusuario principal."
+            
         cursor.execute(
             "UPDATE users SET nombre = ?, primer_apellido = ?, segundo_apellido = ?, email = ?, telefono = ?, rol = ? WHERE id = ?",
             (nombre, primer_apellido, segundo_apellido, email, telefono, rol, user_id)
@@ -248,17 +254,12 @@ def delete_user_by_id(user_id):
         from app import get_db_connection
         conn = get_db_connection()
         
-        # No permitir la eliminación del único administrador
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM users WHERE rol = 'Administrador'")
-        admin_count = cursor.fetchone()[0]
-
-        cursor.execute("SELECT rol FROM users WHERE id = ?", (user_id,))
-        user_rol = cursor.fetchone()
-        if user_rol and user_rol['rol'] == 'Administrador' and admin_count == 1:
+        # No permitir la eliminación del único superusuario o si es el superusuario principal
+        user_to_delete = find_user_by_id(user_id)
+        if user_to_delete and user_to_delete['email'] == SUPERUSER_EMAIL:
             conn.close()
-            return False, 'No puedes eliminar el único usuario con rol de Administrador.'
-        
+            return False, 'No puedes eliminar al superusuario principal.'
+
         result = conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
         conn.close()
@@ -359,7 +360,7 @@ def make_admin_by_email(email):
                o (False, mensaje de error) si el usuario no es encontrado.
     """
     try:
-        from app import get_db_connection, bcrypt
+        from app import get_db_connection
         conn = get_db_connection()
         
         # Buscar el usuario por su correo electrónico
@@ -371,6 +372,38 @@ def make_admin_by_email(email):
             conn.commit()
             conn.close()
             return True, f'El usuario con el correo {email} ha sido convertido en Administrador.'
+        else:
+            conn.close()
+            return False, f'Error: No se encontró ningún usuario con el correo {email}.'
+            
+    except Exception as e:
+        print(f"Error al actualizar el rol del usuario: {e}")
+        return False, 'Error inesperado al intentar actualizar el rol del usuario.'
+        
+def make_superuser_by_email(email):
+    """
+    Convierte a un usuario existente en superusuario buscándolo por correo electrónico.
+    
+    Args:
+        email (str): El correo electrónico del usuario a convertir.
+        
+    Returns:
+        tuple: (True, mensaje de éxito) si la actualización es exitosa, 
+               o (False, mensaje de error) si el usuario no es encontrado.
+    """
+    try:
+        from app import get_db_connection
+        conn = get_db_connection()
+        
+        # Buscar el usuario por su correo electrónico
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        
+        if user:
+            # Actualizar el rol del usuario a 'Superusuario'
+            conn.execute("UPDATE users SET rol = 'Superusuario' WHERE email = ?", (email,))
+            conn.commit()
+            conn.close()
+            return True, f'El usuario con el correo {email} ha sido convertido en Superusuario.'
         else:
             conn.close()
             return False, f'Error: No se encontró ningún usuario con el correo {email}.'

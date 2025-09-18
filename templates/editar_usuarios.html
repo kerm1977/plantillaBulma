@@ -58,9 +58,10 @@
                 <label class="label">Rol</label>
                 <div class="control">
                     <div class="select is-fullwidth is-rounded">
-                        <select name="rol" required>
+                        <select name="rol" required {% if is_superuser %}disabled{% endif %}>
                             <option value="Usuario Regular" {% if user.rol == 'Usuario Regular' %}selected{% endif %}>Usuario Regular</option>
                             <option value="Administrador" {% if user.rol == 'Administrador' %}selected{% endif %}>Administrador</option>
+                            <option value="Superusuario" {% if user.rol == 'Superusuario' %}selected{% endif %}>Superusuario</option>
                         </select>
                     </div>
                 </div>

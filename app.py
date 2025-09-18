@@ -163,7 +163,7 @@ def usuarios():
     Muestra la lista de usuarios.
     Solo accesible para administradores.
     """
-    if current_user.rol != 'Administrador':
+    if current_user.rol not in ['Administrador', 'Superusuario']:
         flash('No tienes permiso para ver esta página.', 'danger')
         return redirect(url_for('perfil'))
         
@@ -175,14 +175,17 @@ def usuarios():
 def editar_usuario(user_id):
     """
     Edita la información de un usuario.
-    Solo accesible para administradores.
+    Solo accesible para administradores y superusuarios.
     """
-    if current_user.rol != 'Administrador':
+    # Buscar el usuario a editar
+    user_to_edit = user_module.find_user_by_id(user_id)
+
+    # Validar que el usuario actual tiene permisos para editar
+    if current_user.rol == 'Usuario Regular' or (current_user.rol == 'Administrador' and user_to_edit['rol'] == 'Superusuario'):
         flash('No tienes permiso para realizar esta acción.', 'danger')
         return redirect(url_for('perfil'))
         
-    user = user_module.find_user_by_id(user_id)
-    if not user:
+    if not user_to_edit:
         flash('Usuario no encontrado.', 'danger')
         return redirect(url_for('usuarios'))
 
@@ -194,17 +197,22 @@ def editar_usuario(user_id):
             flash('Usuario actualizado con éxito.', 'success')
         return redirect(url_for('usuarios'))
 
-    # Cambiado el nombre del archivo de plantilla de 'editar_usuario.html' a 'editar_usuarios.html'
-    return render_template('editar_usuarios.html', user=user)
+    # Pasar si el usuario es el superusuario principal a la plantilla
+    is_superuser = user_to_edit['email'] == user_module.SUPERUSER_EMAIL
+    return render_template('editar_usuarios.html', user=user_to_edit, is_superuser=is_superuser)
 
 @app.route('/usuarios/eliminar/<int:user_id>', methods=['POST'])
 @login_required
 def eliminar_usuario(user_id):
     """
     Elimina un usuario de la base de datos.
-    Solo accesible para administradores.
+    Solo accesible para administradores y superusuarios.
     """
-    if current_user.rol != 'Administrador':
+    # Buscar el usuario a eliminar
+    user_to_delete = user_module.find_user_by_id(user_id)
+
+    # Validar que el usuario actual tiene permisos para eliminar
+    if current_user.rol == 'Usuario Regular' or (current_user.rol == 'Administrador' and user_to_delete['rol'] in ['Administrador', 'Superusuario']):
         flash('No tienes permiso para realizar esta acción.', 'danger')
         return redirect(url_for('perfil'))
 
@@ -226,18 +234,10 @@ with app.app_context():
         conn = get_db_connection()
         user_module.create_user_table(conn)
         conn.close()
-
+        
         # Comprueba y actualiza el rol de superusuario
         try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM users WHERE email = 'kenth1977@gmail.com'")
-            user_to_check = cursor.fetchone()
-            
-            if user_to_check and user_to_check['rol'] != 'Administrador':
-                print("El usuario kenth1977@gmail.com no es Administrador. Actualizando...")
-                user_module.make_admin_by_email('kenth1977@gmail.com')
-            conn.close()
+            user_module.make_superuser_by_email(user_module.SUPERUSER_EMAIL)
         except Exception as e:
             print(f"Error al verificar y actualizar el rol de superusuario: {e}")
             
