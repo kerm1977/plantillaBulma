@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    
+    <title>{% block title %}Mi Sitio Web{% endblock %}</title>
+   
+    
+    <!-- Fuente Google: Inter (por defecto de Tailwind, aunque usamos Bulma) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Iconos de Font Awesome para una buena apariencia -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+</head>
+<body>
+    <!-- Botón para retroceder, flotante y a 70px del fondo -->
+    <a href="javascript:history.back()" class="back-button is-rounded is-flex is-align-items-center is-justify-content-center">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+
+    <!-- Botón para ir arriba, flotante y a 70px del fondo -->
+    <a id="back-to-top" class="back-to-top-button is-rounded is-flex is-align-items-center is-justify-content-center">
+        <i class="fas fa-arrow-up"></i>
+    </a>
+    
+    <!-- Navbar (se incluirá de un archivo separado) -->
+    {% include 'navbar.html' %}
+
+    <!-- Contenedor principal para los mensajes flash de Flask -->
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="notification is-{% if category == 'success' %}success{% elif category == 'danger' %}danger{% elif category == 'warning' %}warning{% else %}info{% endif %}">
+                        <button class="delete" onclick="this.parentElement.style.display='none';"></button>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Contenido dinámico de cada página -->
+    <section class="section">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </section>
+
+    <!-- Footer (se incluirá de un archivo separado) -->
+    {% include 'footer.html' %}
+    
+    <!-- JavaScript para la funcionalidad de los botones y temas -->
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/buttons.js') }}"></script>
+</body>
+</html>

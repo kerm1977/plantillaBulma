@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+    <div class="container is-flex is-justify-content-center is-align-items-center" style="min-height: 70vh;">
+        <div class="box has-text-centered p-6 has-background-white-ter has-text-grey-dark">
+            <h1 class="title is-2 has-text-black">Bienvenido a Mi Sitio Web</h1>
+            <p class="subtitle is-4 has-text-grey-dark">Tu lugar para la gestión de usuarios.</p>
+            <p class="mb-4">
+                Esta es la página principal de tu sitio. Para comenzar, por favor, inicia sesión. Si aún no tienes una cuenta, puedes registrarte.
+            </p>
+            <div class="buttons is-centered">
+                <a href="{{ url_for('login') }}" class="button is-primary is-rounded is-large">
+                    <span class="icon"><i class="fas fa-sign-in-alt"></i></span>
+                    <span>Iniciar Sesión</span>
+                </a>
+                <a href="{{ url_for('register') }}" class="button is-link is-rounded is-large">
+                    <span class="icon"><i class="fas fa-user-plus"></i></span>
+                    <span>Registrarse</span>
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

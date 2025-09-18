@@ -1,0 +1,10 @@
+   
+@import url('base.css');
+@import url('backtop.css');
+@import url('backbtn.css');
+@import url('bulma.css');
+
+
+/*html*/
+    /*<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">*/
+ 

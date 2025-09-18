@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Ver Usuarios{% endblock %}
+
+{% block content %}
+<div class="container mt-6">
+    <h1 class="title has-text-centered has-text-black">Lista de Usuarios</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="notification is-{{ category }} is-light is-rounded mb-4">
+                <button class="delete"></button>
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
+    {% if users %}
+    <div class="table-container">
+        <table class="table is-striped is-hoverable is-fullwidth">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre de Usuario</th>
+                    <th>Nombre Completo</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Rol</th>
+                    <th class="has-text-centered">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.nombre | title }} {{ user.primer_apellido | title }} {{ user.segundo_apellido | title }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.telefono }}</td>
+                    <td>{{ user.rol | title }}</td>
+                    <td class="has-text-centered">
+                        <a href="{{ url_for('detalle_usuarios', user_id=user.id) }}" class="button is-small is-info is-rounded" title="Ver detalle">
+                            <span class="icon"><i class="fas fa-eye"></i></span>
+                        </a>
+                        <a href="{{ url_for('editar_usuarios', user_id=user.id) }}" class="button is-small is-warning is-rounded" title="Editar">
+                            <span class="icon"><i class="fas fa-edit"></i></span>
+                        </a>
+                        <a href="{{ url_for('borrar_usuario', user_id=user.id) }}" class="button is-small is-danger is-rounded" title="Borrar">
+                            <span class="icon"><i class="fas fa-trash-alt"></i></span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="notification is-info is-light is-rounded has-text-centered">
+        No hay usuarios registrados.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

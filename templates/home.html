@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<div class="container is-flex is-justify-content-center is-align-items-center" style="min-height: 70vh;">
+    <div class="box has-text-centered p-6 has-background-white-ter has-text-grey-dark">
+        <h1 class="title is-2 has-text-black">¡Bienvenido, {{ current_user.nombre | title }}!</h1>
+        <p class="subtitle is-4 has-text-grey-dark">Has iniciado sesión correctamente.</p>
+        <p class="mb-4">
+            Aquí encontrarás las opciones disponibles para tu cuenta.
+        </p>
+        <div class="buttons is-centered">
+            <a href="#" class="button is-primary is-rounded is-large">
+                <span class="icon"><i class="fas fa-user-circle"></i></span>
+                <span>Ver Mi Perfil</span>
+            </a>
+            <a href="#" class="button is-link is-rounded is-large">
+                <span class="icon"><i class="fas fa-users"></i></span>
+                <span>Gestión de Usuarios</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

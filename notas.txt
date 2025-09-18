@@ -1,0 +1,59 @@
+Cada archivo me lo vas a ir entreando en el canvas cada vez que escriba ok osea uno por uno
+
+Necesito un sitio web en flask, html, css, bulma, flash de flask y sqlite con una base de datos llamado db.db.  Todo va a extender desde base.html.
+Los botones de borrar van a construir totalmente con flask y bulma que estará en la carpeta template / css y funcionará totalmente desde el backend. Me vas a dar todos los js y css. No utilizaremos ni en broma los CDN
+
+
+ARCHIVOS 
+users.py va a contener todos los datos de los usuarios registrados. Va a contener las tablas y la lógica en absoluto. Y solo exportará lo necesario a app.py para que funcione. Aqui estarán las funciones de las siguiente áreas o vistas. Al igual se administrará en users.py toda la lógica para  que se pueda loguear correctamente.
+Aqui mismo un usuario asignado puede manejar los roles de cada usuario como SuperUsuario, Administrador, Usuario Regular. En resumen. Todo lo que se refiere a Usuario personas y contactos se manejará desde este archivo.
+
+
+app.py va a contener toda la conexión a la base de datos sqlite y local configurada para que sea inteligente y sepa cual va a utilizar si local o la de pythonanywhere
+todas las contraseñas van a estar encriptadas con bcrypt
+
+
+la estructura inicial va a tener las vistas:
+Todas estas vistas van a heredar de base.html
+
+base.html va contener absolutamente todo el diseño ninguna vista va a tener diseño css.
+Agrega un botón flotante a la izquierda inferior y otro backtotop a la derecha ambos a 70px del footer
+agrega los temas noche y claro en el navbar de bulma
+
+index.html
+home.html 
+navbar.html
+footer.html
+perfil.html
+ver_usuarios.html 
+crear_usuarios.html
+editar_usuarios.html
+detalle_usuarios.html 
+
+login.html va a permitir ingresar con Usuario autogenerado, teléfono, email y contraseña. Además el campo de contraseña va a  tener un ojo para ver la contraseña
+va a tener otro botón llamado recordar y va a mantener la sesión activa 
+y va a contener un enlace llamado registrar. Luego de loguearme va a ir a la vista llamada home que va a dar la bienvenida con el nombre del usuario el navbar va a tener la opcion para ir a login, cerrar sesión, 
+
+register.html va a permitir agregar:
+id automáticamente, 
+nombre, (convierte a formato tittle)
+Primer apellido, (convierte a formato tittle) 
+segundo apellido, (convierte a formato tittle)
+Email, 
+Teléfono. (Solo Acepta número, no es posible ingresar texto ni caracteres además que tampoco permite mas no menos de 8 caracteres)
+Este campo se va a generar automáticamente luego de guardar la información, este usuario se va  a componer de las iniciales 
+contraseña (convierte a formato lowercase y el input debe tener un ojo para ver la contraseña )
+verificar_contraseña (convierte a formato lowercase)
+Roll (Solo  visto por un un usuario que puede asignar máximo 2 superusuarios más)
+
+al presionar registra debe ir automáticamente  login.html y con un mensaje flash debe decir bienvenido usuario puedes loguearte
+
+
+
+CLASES
+la clase del botón retroceder que va a estar en static/css/ backbtn.css
+la clase del botón ir arriba va a estar en static/css/backtop.css
+el JS va a tener la lógica  de ambos botones en un archivo llamado bottons.js que se encuentra dentro de static/js/bottons.js 
+
+
+

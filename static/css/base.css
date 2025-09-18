@@ -1,0 +1,141 @@
+/* Estilos del tema: Variables para el modo claro y oscuro */
+:root {
+    --background-color: #ffffff;
+    --text-color: #363636;
+    --navbar-background: #ffffff;
+    --navbar-text: #363636;
+    --footer-background: #f5f5f5;
+    --footer-text: #4a4a4a;
+    --button-background: #00d1b2;
+    --button-text: #ffffff;
+    --link-color: #3273dc;
+    --link-hover-color: #363636;
+}
+
+body.is-dark-mode {
+    --background-color: #1a1a1a;
+    --text-color: #f5f5f5;
+    --navbar-background: #2b2b2b;
+    --navbar-text: #f5f5f5;
+    --footer-background: #2b2b2b;
+    --footer-text: #f5f5f5;
+    --button-background: #48c78e;
+    --button-text: #1a1a1a;
+    --link-color: #48c78e;
+    --link-hover-color: #f5f5f5;
+}
+
+/* Aplicar transiciones suaves para un cambio de tema agradable */
+html, body, .navbar, .footer, .button, .back-button, .back-to-top-button {
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Estilos para el botón de cambio de tema en la barra de navegación */
+.theme-toggle-button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 1rem;
+    color: var(--navbar-text);
+}
+        
+/* Estilos para el botón de regresar */
+.back-button {
+    position: fixed;
+    bottom: 70px;
+    left: 20px;
+    z-index: 999;
+    width: 50px;
+    height: 50px;
+    background-color: var(--button-background);
+    color: var(--button-text);
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.back-button.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Estilos para el botón de volver arriba */
+.back-to-top-button {
+    position: fixed;
+    bottom: 70px;
+    right: 20px;
+    z-index: 999;
+    width: 50px;
+    height: 50px;
+    background-color: var(--button-background);
+    color: var(--button-text);
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.back-to-top-button.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Estilos globales y reutilizables */
+html {
+    background-color: var(--background-color);
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.content a, .content a:hover {
+    color: var(--link-color);
+}
+
+.content strong {
+    color: var(--text-color);
+}
+
+.title, .subtitle {
+    color: var(--text-color);
+}
+
+pre, code {
+    background-color: #dbdbdb;
+    color: #4a4a4a;
+}
+
+body.is-dark-mode pre, body.is-dark-mode code {
+    background-color: #4a4a4a;
+    color: #f5f5f5;
+}
+
+/* Clases de utilidad */
+.is-relative {
+    position: relative;
+}
+
+.is-flex {
+    display: flex;
+}
+
+.is-align-items-center {
+    align-items: center;
+}
+
+.is-justify-content-center {
+    justify-content: center;
+}
+
+.mt-4 {
+    margin-top: 1.5rem;
+}
