@@ -1,11 +1,15 @@
 # Importaciones necesarias para la manipulación de la base de datos y Bcrypt
 import sqlite3
 import re
+import os
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # ----------------------------------------------------
 #              Funciones de la Base de Datos
 # ----------------------------------------------------
+
+# Archivo de bandera para verificar si la tabla ya fue creada
+TABLE_CREATED_FLAG = 'database/.table_users_created'
 
 def create_user_table(conn):
     """
@@ -15,22 +19,30 @@ def create_user_table(conn):
         conn (sqlite3.Connection): El objeto de conexión a la base de datos.
     """
     try:
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nombre TEXT NOT NULL,
-                primer_apellido TEXT NOT NULL,
-                segundo_apellido TEXT NOT NULL,
-                usuario TEXT UNIQUE NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                telefono TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                rol TEXT NOT NULL DEFAULT 'Usuario Regular'
-            )
-        ''')
-        conn.commit()
-        print("Tabla 'users' creada o ya existe.")
+        # Verificar si el archivo de bandera ya existe
+        if not os.path.exists(TABLE_CREATED_FLAG):
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nombre TEXT NOT NULL,
+                    primer_apellido TEXT NOT NULL,
+                    segundo_apellido TEXT NOT NULL,
+                    usuario TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    telefono TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    rol TEXT NOT NULL DEFAULT 'Usuario Regular'
+                )
+            ''')
+            conn.commit()
+            
+            # Crear el archivo de bandera para indicar que la tabla ya fue creada
+            with open(TABLE_CREATED_FLAG, 'w') as f:
+                f.write('Tabla creada')
+                
+            print("Tabla 'users' creada o ya existe.")
+        
     except sqlite3.Error as e:
         print(f"Error al crear la tabla: {e}")
 
@@ -94,7 +106,7 @@ def add_new_user(form_data):
             counter += 1
         
         # Encriptar la contraseña
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        hashed_password = generate_password_hash(password).decode('utf-8')
         
         try:
             # Ahora, insertar el usuario con el nombre de usuario ya validado
@@ -193,7 +205,7 @@ def verify_user(user_input, password):
         
         if user_data:
             # Compara la contraseña encriptada
-            if bcrypt.check_password_hash(user_data['password'], password):
+            if check_password_hash(user_data['password'], password):
                 return user_data
         
         return None

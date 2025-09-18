@@ -5,8 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
-# Importa las funciones del módulo de users.py (se implementarán después)
-# Este módulo contendrá toda la lógica de la base de datos para los usuarios
+# Importa las funciones del módulo de users.py
 import users as user_module
 
 # ----------------------------------------------------
@@ -32,9 +31,6 @@ login_manager.login_message = 'Por favor, inicia sesión para acceder a esta pá
 # ----------------------------------------------------
 
 # Variable para almacenar la ruta de la base de datos
-# Terminantemente prohibido bajo ninguna circunstancia tocar la base de datos,
-# ni su nombre ni ubicación a menos que sea una orden directa.
-# Nunca se debe incrustar usuarios directos al código ni de prueba ni reales.
 DB_PATH = 'database/db.db'
 
 def get_db_connection():
@@ -160,91 +156,11 @@ def editar_usuarios(user_id):
 #               Ejecución de la Aplicación
 # ----------------------------------------------------
 
-if __name__ == '__main__':
-    # Inicializa la base de datos y crea la tabla de usuarios
+# Inicializa la base de datos y crea la tabla de usuarios antes de la primera solicitud
+with app.app_context():
     conn = get_db_connection()
     user_module.create_user_table(conn)
     conn.close()
 
-    app.run(debug=True, port="8080")
-
-
-
-# Migraciones Cmder
-        # set FLASK_APP=app.py     <--Crea un directorio de migraciones
-        # flask db init             <--
-        # $ flask db stamp head
-        # $ flask db migrate
-        # $ flask db migrate -m "mensaje x"
-        # $ flask db upgrade
-        # ERROR [flask_migrate] Error: Target database is not up to date.
-        # $ flask db stamp head
-        # $ flask db migrate
-        # $ flask db upgrade
-        # git clone https://github.com/kerm1977/MI_APP_FLASK.git
-        # mysql> DROP DATABASE kenth1977$db; PYTHONANYWHATE
-# -----------------------
-
-# del db.db
-# rmdir /s /q migrations
-# flask db init
-# flask db migrate -m "Reinitial migration with all correct models"
-# flask db upgrade
-
-
-# -----------------------
-# Consola de pythonanywhere ante los errores de versiones
-# Error: Can't locate revision identified by '143967eb40c0'
-
-# flask db stamp head
-# flask db migrate
-# flask db upgrade
-
-# Database pythonanywhere
-# kenth1977$db
-# DROP TABLE alembic_version;
-# rm -rf migrations
-# flask db init
-# flask db migrate -m "Initial migration after reset"
-# flask db upgrade
-
-# 21:56 ~/LATRIBU1 (main)$ source env/Scripts/activate
-# (env) 21:57 ~/LATRIBU1 (main)$
-
-# En caso de que no sirva el env/Scripts/activate
-# remover en env
-# 05:48 ~/latribuapp (main)$ rm -rf env
-# Crear nuevo
-# 05:49 ~/latribuapp (main)$ python -m venv env
-# 05:51 ~/latribuapp (main)$ source env/bin/activate
-# (env) 05:52 ~/latribuapp (main)$ 
-
-
-
-# Cuando se cambia de repositorio
-# git remote -v
-# git remote add origin <URL_DEL_REPOSITORIO>
-# git remote set-url origin <NUEVA_URL_DEL_REPOSITORIO>
-# git branchgit remote -v
-# git push -u origin flet
-
-
-
-# borrar base de datos y reconstruirla
-# pip install PyMySQL
-# SHOW TABLES;
-# 21:56 ~/LATRIBU1 (main)$ source env/Scripts/activate <-- Entra al entorno virtual
-# (env) 21:57 ~/LATRIBU1 (main)$
-# (env) 23:30 ~/LATRIBU1 (main)$ cd /home/kenth1977/LATRIBU1
-# (env) 23:31 ~/LATRIBU1 (main)$ rm -f instance/db.db
-# (env) 23:32 ~/LATRIBU1 (main)$ rm -rf migrations
-# (env) 23:32 ~/LATRIBU1 (main)$ flask db init
-# (env) 23:33 ~/LATRIBU1 (main)$ flask db migrate -m "Initial migration with all models"
-# (env) 23:34 ~/LATRIBU1 (main)$ flask db upgrade
-# (env) 23:34 ~/LATRIBU1 (main)$ ls -l instance/db
-
-
-# GUARDA  todas las dependecias para utilizar offline luego
-# pip download -r requirements.txt -d librerias_offline
-# INSTALA  todas las dependecias para utilizar offline luego
-# pip install --no-index --find-links=./librerias_offline -r requirements.txt
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', debug=True, port=8080)
