@@ -112,6 +112,15 @@ body {
     color: var(--navbar-text) !important;
 }
 
+.navbar-burger span {
+    background-color: var(--navbar-text) !important;
+}
+
+/* Estilos para el menú desplegable en modo oscuro */
+.navbar-menu {
+    background-color: var(--navbar-background) !important;
+}
+
 .content a, .content a:hover {
     color: var(--link-color) !important;
 }
