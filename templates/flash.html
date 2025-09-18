@@ -1,0 +1,49 @@
+<!-- Contenedor principal para los mensajes flash de Flask -->
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="notification is-{% if category == 'success' %}success{% elif category == 'danger' %}danger{% elif category == 'warning' %}warning{% else %}info{% endif %}">
+                    <button class="delete" onclick="this.parentElement.style.display='none';"></button>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
+
+    <style>
+        .notification {
+            position: relative;
+            opacity: 1;
+            transition: opacity 1s ease-in-out;
+        }
+    </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const notifications = document.querySelectorAll('.notification');
+
+        notifications.forEach(notification => {
+            const deleteButton = notification.querySelector('.delete');
+            
+            // Eliminar manualmente al hacer clic en el botón de cerrar
+            if (deleteButton) {
+                deleteButton.addEventListener('click', () => {
+                    notification.style.opacity = '0';
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 1000); // Esperar a que la transición termine (1s)
+                });
+            }
+
+            // Desvanecer y eliminar automáticamente después de 4 segundos
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    notification.remove();
+                }, 1000); // Esperar a que la transición termine (1s)
+            }, 4000); // 4 segundos
+        });
+    });
+</script>

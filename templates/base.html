@@ -30,20 +30,8 @@
     
     <!-- Navbar (se incluirá de un archivo separado) -->
     {% include 'navbar.html' %}
+    {% include 'flash.html' %}
 
-    <!-- Contenedor principal para los mensajes flash de Flask -->
-    <div class="container mt-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="notification is-{% if category == 'success' %}success{% elif category == 'danger' %}danger{% elif category == 'warning' %}warning{% else %}info{% endif %}">
-                        <button class="delete" onclick="this.parentElement.style.display='none';"></button>
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-    </div>
 
     <!-- Contenido dinámico de cada página -->
     <section class="section">
