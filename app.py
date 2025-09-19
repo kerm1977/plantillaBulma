@@ -224,6 +224,20 @@ def eliminar_usuario(user_id):
         flash(message, 'danger')
     
     return redirect(url_for('usuarios'))
+    
+@app.route('/usuarios/detalle/<int:user_id>')
+@login_required
+def detalle_usuario(user_id):
+    """
+    Muestra los detalles de un usuario.
+    """
+    user_data = user_module.find_user_by_id(user_id)
+    if not user_data:
+        flash('Usuario no encontrado.', 'danger')
+        return redirect(url_for('usuarios'))
+
+    return render_template('detalle_usuarios.html', user=user_data)
+
 
 # ----------------------------------------------------
 #               Ejecución de la Aplicación
@@ -250,6 +264,7 @@ if __name__ == '__main__':
     app.run(debug=True, port=8080, host='0.0.0.0')
 
 
+# Terminantemente prohibido eliminar los comentarios
 # Migraciones Cmder
         # set FLASK_APP=app.py     <--Crea un directorio de migraciones
         # flask db init             <--

@@ -3,154 +3,139 @@
 {% block title %}Lista de Usuarios{% endblock %}
 
 {% block content %}
+
 <style>
-  .user-card {
-    border: 1px solid #dbdbdb;
-    border-radius: 6px;
-    padding: 1.5rem;
-  }
+.user-card {
+border: 1px solid #dbdbdb;
+border-radius: 6px;
+padding: 1.5rem;
+}
 
-  .user-detail-p {
-    margin-bottom: 0.25em !important;
-  }
+.user-detail-p {
+margin-bottom: 0.25em !important;
+}
 </style>
+
 <div class="container mt-6">
-  <h1 class="title is-5 has-text-centered">¡Usuarios Registrados!</h1>
+<h1 class="title is-5 has-text-centered">¡Usuarios Registrados!</h1>
 
-  <div class="field">
-    <div class="control has-icons-left">
-      <input id="search-input" class="input is-rounded is-medium" type="text" placeholder="Buscar Usuario">
-      <span class="icon is-left">
-        <i class="fas fa-search"></i>
-      </span>
-    </div>
-  </div>
+<div class="field">
+<div class="control has-icons-left">
+<input id="search-input" class="input is-rounded is-medium" type="text" placeholder="Buscar Usuario">
+<span class="icon is-left">
+<i class="fas fa-search"></i>
+</span>
+</div>
+</div>
 
-  <div id="users-container" class="columns is-multiline is-mobile is-centered is-hidden-980">
-    {% for user in users %}
-    <div class="column is-12-mobile is-10-tablet is-4-desktop user-card-column">
-      <div class="is-rounded user-card">
-        <div class="content">
-          <div class="media">
-            <div class="media-content">
-              <p class="title is-4 has-text-warning">{{ user.nombre }} {{ user.primer_apellido }}</p>
-              <p class="subtitle is-6 has-text-grey">@{{ user.usuario }}</p>
-            </div>
-          </div>
-          <div class="content">
-            <p class="user-detail-p"><strong>ID:</strong> <span class="user-id">{{ user.id }}</span></p>
-            <p class="user-detail-p"><strong>Email:</strong> <span class="user-email">{{ user.email }}</span></p>
-            <p class="user-detail-p"><strong>Teléfono:</strong> <span class="user-phone">{{ user.telefono }}</span></p>
-            <p class="user-detail-p"><strong>Rol:</strong> <span class="user-rol">{{ user.rol }}</span></p>
-            <br>
-            <div class="buttons is-centered is-flex is-flex-wrap-nowrap">
-              <a href="{{ url_for('editar_usuario', user_id=user.id) }}" class="button is-info is-rounded is-flex-grow-1 is-small">
-                <span class="icon"><i class="fas fa-edit"></i></span>
-                <span>Editar</span>
-              </a>
-              <form action="{{ url_for('eliminar_usuario', user_id=user.id) }}" method="POST" style="display:inline;" class="is-flex is-flex-grow-1">
-                <button type="submit" class="button is-danger is-rounded is-flex-grow-1 is-small" onclick="return confirm('¿De verdad quieres borrar a este usuario? ¡Piensalo bien!');">
-                  <span class="icon"><i class="fas fa-trash-alt"></i></span>
-                  <span>Eliminar</span>
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
+<div id="users-container" class="columns is-multiline is-mobile is-centered is-hidden-980 mb-6">
+{% for user in users %}
+<div class="column is-12-mobile is-10-tablet is-4-desktop user-card-column ">
+<div class="is-rounded user-card">
+<div class="content">
+<div class="media">
+<div class="media-content">
+<p class="title is-4 has-text-warning">{{ user.nombre }} {{ user.primer_apellido }}</p>
+<p class="subtitle is-6 has-text-grey">@{{ user.usuario }}</p>
+</div>
+</div>
+<div class="content">
+<p class="user-detail-p"><strong>Teléfono:</strong> <span class="user-phone">{{ user.telefono }}</span></p>
+<br>
+<div class="buttons is-centered is-flex is-flex-wrap-nowrap">
+<a href="{{ url_for('detalle_usuario', user_id=user.id) }}" class="button is-info is-rounded is-flex-grow-1 is-small">
+<span class="icon"><i class="fas fa-eye"></i></span>
+<span>Ver más</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+{% endfor %}
+</div>
 
-  <table id="users-table" class="table is-striped is-hoverable is-fullwidth is-hidden-980-down">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nombre</th>
-        <th>Usuario</th>
-        <th>Email</th>
-        <th>Teléfono</th>
-        <th>Rol</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for user in users %}
-      <tr>
-        <td>{{ user.id }}</td>
-        <td>{{ user.nombre }} {{ user.primer_apellido }}</td>
-        <td>{{ user.usuario }}</td>
-        <td>{{ user.email }}</td>
-        <td>{{ user.telefono }}</td>
-        <td>{{ user.rol }}</td>
-        <td>
-          <div class="buttons is-small">
-            <a href="{{ url_for('editar_usuario', user_id=user.id) }}" class="button is-info is-light">
-              <span class="icon"><i class="fas fa-edit"></i></span>
-              <span>Editar</span>
-            </a>
-            <form action="{{ url_for('eliminar_usuario', user_id=user.id) }}" method="POST" style="display:inline;">
-              <button type="submit" class="button is-danger is-light" onclick="return confirm('¿De verdad quieres borrar a este usuario? ¡Piensalo bien!');">
-                <span class="icon"><i class="fas fa-trash-alt"></i></span>
-                <span>Eliminar</span>
-              </button>
-            </form>
-          </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<table id="users-table" class="table is-striped is-hoverable is-fullwidth is-hidden-980-down">
+<thead>
+<tr>
+<th>ID</th>
+<th>Nombre</th>
+<th>Usuario</th>
+<th>Teléfono</th>
+<th>Acciones</th>
+</tr>
+</thead>
+<tbody>
+{% for user in users %}
+<tr>
+<td>{{ user.id }}</td>
+<td>{{ user.nombre }} {{ user.primer_apellido }}</td>
+<td>{{ user.usuario }}</td>
+<td>{{ user.telefono }}</td>
+<td>
+<div class="buttons is-small">
+<a href="{{ url_for('detalle_usuario', user_id=user.id) }}" class="button is-info is-light">
+<span class="icon"><i class="fas fa-eye"></i></span>
+<span>Ver más</span>
+</a>
+</div>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('search-input');
-    const usersTable = document.getElementById('users-table');
-    const userCards = document.querySelectorAll('.user-card-column');
+const searchInput = document.getElementById('search-input');
+const usersTable = document.getElementById('users-table');
+const userCards = document.querySelectorAll('.user-card-column');
 
-    function filterUsers(searchTerm) {
-        const filterText = searchTerm.toLowerCase();
+function filterUsers(searchTerm) {
+    const filterText = searchTerm.toLowerCase();
 
-        // Filtrar tarjetas
-        userCards.forEach(card => {
-            const cardContent = card.textContent.toLowerCase();
-            if (cardContent.includes(filterText)) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
-        });
-
-        // Filtrar filas de la tabla
-        const tableRows = usersTable.querySelectorAll('tbody tr');
-        tableRows.forEach(row => {
-            const rowContent = row.textContent.toLowerCase();
-            if (rowContent.includes(filterText)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-
-    searchInput.addEventListener('input', (event) => {
-        filterUsers(event.target.value);
+    // Filtrar tarjetas
+    userCards.forEach(card =&gt; {
+        const cardContent = card.textContent.toLowerCase();
+        if (cardContent.includes(filterText)) {
+            card.style.display = &#39;block&#39;;
+        } else {
+            card.style.display = &#39;none&#39;;
+        }
     });
 
-    // Oculta la tabla en móviles y las tarjetas en desktop
-    const mediaQuery = window.matchMedia('(max-width: 980px)');
-    function handleMediaQuery(e) {
-        if (e.matches) {
-            usersTable.style.display = 'none';
-            document.getElementById('users-container').style.display = 'flex';
+    // Filtrar filas de la tabla
+    const tableRows = usersTable.querySelectorAll(&#39;tbody tr&#39;);
+    tableRows.forEach(row =&gt; {
+        const rowContent = row.textContent.toLowerCase();
+        if (rowContent.includes(filterText)) {
+            row.style.display = &#39;&#39;;
         } else {
-            usersTable.style.display = 'table';
-            document.getElementById('users-container').style.display = 'none';
+            row.style.display = &#39;none&#39;;
         }
+    });
+}
+
+searchInput.addEventListener(&#39;input&#39;, (event) =&gt; {
+    filterUsers(event.target.value);
+});
+
+// Oculta la tabla en móviles y las tarjetas en desktop
+const mediaQuery = window.matchMedia(&#39;(max-width: 980px)&#39;);
+function handleMediaQuery(e) {
+    if (e.matches) {
+        usersTable.style.display = &#39;none&#39;;
+        document.getElementById(&#39;users-container&#39;).style.display = &#39;flex&#39;;
+    } else {
+        usersTable.style.display = &#39;table&#39;;
+        document.getElementById(&#39;users-container&#39;).style.display = &#39;none&#39;;
     }
-    mediaQuery.addListener(handleMediaQuery);
-    handleMediaQuery(mediaQuery); // Llama a la función al cargar para la configuración inicial
+}
+mediaQuery.addListener(handleMediaQuery);
+handleMediaQuery(mediaQuery); // Llama a la función al cargar para la configuración inicial
+
 });
 </script>
+
 {% endblock %}

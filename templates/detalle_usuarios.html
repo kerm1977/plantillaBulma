@@ -6,29 +6,27 @@
 <div class="container mt-6">
     <div class="columns is-centered">
         <div class="column is-5">
-            <div class="box p-6 has-background-white-ter">
-                <h1 class="title has-text-centered has-text-black">Detalles de Usuario</h1>
-                {% if user %}
-                <div class="content">
-                    <p><strong>ID de Usuario:</strong> {{ user.id }}</p>
-                    <p><strong>Nombre de Usuario:</strong> {{ user.username }}</p>
-                    <p><strong>Nombre Completo:</strong> {{ user.nombre | title }} {{ user.primer_apellido | title }} {{ user.segundo_apellido | title }}</p>
-                    <p><strong>Email:</strong> {{ user.email }}</p>
-                    <p><strong>Teléfono:</strong> {{ user.telefono }}</p>
-                    <p><strong>Rol:</strong> {{ user.rol | title }}</p>
-                </div>
-                <div class="has-text-centered">
-                    <a href="{{ url_for('ver_usuarios') }}" class="button is-primary is-rounded is-large">
-                        <span class="icon"><i class="fas fa-arrow-left"></i></span>
-                        <span>Volver a la lista</span>
-                    </a>
-                </div>
-                {% else %}
-                <div class="notification is-danger is-light is-rounded has-text-centered">
-                    Usuario no encontrado.
-                </div>
-                {% endif %}
+            <h1 class="title has-text-centered has-text-black is-dark-mode-warning">Detalles de Usuario</h1>
+            {% if user %}
+            <div class="content">
+                <p><strong>ID de Usuario:</strong> {{ user.id }}</p>
+                <p><strong>Nombre de Usuario:</strong> {{ user.usuario }}</p>
+                <p><strong>Nombre Completo:</strong> {{ user.nombre | title }} {{ user.primer_apellido | title }} {{ user.segundo_apellido | title }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>Teléfono:</strong> {{ user.telefono }}</p>
+                <p><strong>Rol:</strong> {{ user.rol | title }}</p>
             </div>
+            <div class="has-text-centered">
+                <a href="{{ url_for('usuarios') }}" class="button is-primary is-rounded is-large is-fullwidth-mobile">
+                    <span class="icon"><i class="fas fa-arrow-left"></i></span>
+                    <span>Volver a la lista</span>
+                </a>
+            </div>
+            {% else %}
+            <div class="notification is-danger is-light is-rounded has-text-centered">
+                Usuario no encontrado.
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

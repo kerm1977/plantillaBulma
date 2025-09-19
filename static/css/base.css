@@ -1,261 +1,321 @@
 /* Estilos del tema: Variables para el modo claro y oscuro */
 :root {
-    --background-color: #ffffff;
-    --text-color: #363636;
-    --navbar-background: #ffb700;
-    --navbar-text: #363636;
-    --card-background: #f5f5f5;
-    --button-background: #00d1b2;
-    --button-text: #ffffff;
-    --link-color: #3273dc;
-    --link-hover-color: #363636;
-    --strong-text-color: #363636;
-    --label-color: #363636;
-    --input-background-color: #f5f5f5;
-    --input-text-color: #363636;
+  --background-color: #ffffff;
+  --text-color: #363636;
+  --navbar-background: #ffb700;
+  --navbar-text: #363636;
+  --card-background: #f5f5f5;
+  --button-background: #00d1b2;
+  --button-text: #ffffff;
+  --link-color: #3273dc;
+  --link-hover-color: #363636;
+  --strong-text-color: #363636;
+  --label-color: #363636;
+  --input-background-color: #f5f5f5;
+  --input-text-color: #363636;
 }
 
 body.is-dark-mode {
-    --background-color: #1a1a1a;
-    --text-color: #f5f5f5;
-    --navbar-background: #363636;
-    --navbar-text: #f5f5f5;
-    --card-background: #2b2b2b;
-    --button-background: #48c78e;
-    --button-text: #1a1a1a;
-    --link-color: #48c78e;
-    --link-hover-color: #f5f5f5;
-    --strong-text-color: #ffabab;
-    --label-color: #ffb700;
-    --input-background-color: #363636;
-    --input-text-color: #f5f5f5;
+  --background-color: #1a1a1a;
+  --text-color: #f5f5f5;
+  --navbar-background: #363636;
+  --navbar-text: #f5f5f5;
+  --card-background: #2b2b2b;
+  --button-background: #48c78e;
+  --button-text: #1a1a1a;
+  --link-color: #48c78e;
+  --link-hover-color: #f5f5f5;
+  --strong-text-color: #ffabab;
+  --label-color: #ffb700;
+  --input-background-color: #363636;
+  --input-text-color: #f5f5f5;
+  /* Estilos añadidos para el modo oscuro */
+  --user-text-color-dark: #E7FFAC;
+  --button-text-color-dark: #1a1a1a;
+  --table-text-color-dark: #85E3FF;
 }
 
 /* Aplicar transiciones suaves para un cambio de tema agradable */
-html, body, .navbar, .button, .back-button, .back-to-top-button, .box {
-    transition: background-color 0.3s !important, color 0.3s !important;
+html,
+body,
+.navbar,
+.button,
+.back-button,
+.back-to-top-button,
+.box {
+  transition: background-color 0.3s !important, color 0.3s !important;
 }
 
 /* Estilos para el botón de cambio de tema en la barra de navegación */
 .theme-toggle-button {
-    background-color: transparent !important;
-    border: none !important;
-    cursor: pointer !important;
-    padding: 0 !important;
-    margin-left: 1rem !important;
-    color: var(--navbar-text) !important;
+  background-color: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  margin-left: 1rem !important;
+  color: var(--navbar-text) !important;
 }
 
 /* Estilos para el botón de regresar */
 .back-button {
-    position: fixed !important;
-    bottom: 70px !important;
-    left: 20px !important;
-    z-index: 999 !important;
-    width: 50px !important;
-    height: 50px !important;
-    background-color: var(--button-background) !important;
-    color: var(--button-text) !important;
-    border: none !important;
-    border-radius: 50% !important;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    transition: opacity 0.3s !important, visibility 0.3s !important;
+  position: fixed !important;
+  bottom: 70px !important;
+  left: 20px !important;
+  z-index: 999 !important;
+  width: 50px !important;
+  height: 50px !important;
+  background-color: var(--button-background) !important;
+  color: var(--button-text) !important;
+  border: none !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transition: opacity 0.3s !important, visibility 0.3s !important;
 }
 
 .back-button.is-visible {
-    opacity: 1 !important;
-    visibility: visible !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* Estilos para el botón de volver arriba */
 .back-to-top-button {
-    position: fixed !important;
-    bottom: 70px !important;
-    right: 20px !important;
-    z-index: 999 !important;
-    width: 50px !important;
-    height: 50px !important;
-    background-color: var(--button-background) !important;
-    color: var(--button-text) !important;
-    border: none !important;
-    border-radius: 50% !important;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    transition: opacity 0.3s !important, visibility 0.3s !important;
+  position: fixed !important;
+  bottom: 70px !important;
+  right: 20px !important;
+  z-index: 999 !important;
+  width: 50px !important;
+  height: 50px !important;
+  background-color: var(--button-background) !important;
+  color: var(--button-text) !important;
+  border: none !important;
+  border-radius: 50% !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transition: opacity 0.3s !important, visibility 0.3s !important;
 }
 
 .back-to-top-button.is-visible {
-    opacity: 1 !important;
-    visibility: visible !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
-/* Estilos globales y reutilizables */
-/* NOTA: Esta sección fue modificada para asegurar que el modo oscuro funcione correctamente y no debe ser alterada. */
+/* Estilos globales y reutilizables /
+/ NOTA: Esta sección fue modificada para asegurar que el modo oscuro funcione correctamente y no debe ser alterada. */
 html {
-    background-color: var(--background-color) !important;
-    height: 100% !important;
-    min-height: 100vh !important;
+  background-color: var(--background-color) !important;
+  height: 100% !important;
+  min-height: 100vh !important;
 }
 
 body {
-    background-color: var(--background-color) !important;
-    color: var(--text-color) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 100vh !important;
-    transition: background-color 0.3s !important, color 0.3s !important;
+  background-color: var(--background-color) !important;
+  color: var(--text-color) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100vh !important;
+  transition: background-color 0.3s !important, color 0.3s !important;
 }
 
 .content-container {
-    flex-grow: 1 !important;
-    padding: 0 1.5rem !important;
+  flex-grow: 1 !important;
+  padding: 0 1.5rem !important;
 }
 
 /* Anular el margen del último elemento del contenido */
-.content-container > *:last-child {
-    margin-bottom: 0 !important;
+.content-container>*:last-child {
+  margin-bottom: 0 !important;
 }
 
-.content a, .content a:hover {
-    color: var(--link-color) !important;
+.content a,
+.content a:hover {
+  color: var(--link-color) !important;
 }
 
 .content strong {
-    color: var(--strong-text-color) !important;
+  color: var(--strong-text-color) !important;
 }
 
-.title, .subtitle {
-    color: var(--text-color) !important;
+.title,
+.subtitle {
+  color: var(--text-color) !important;
 }
 
 .title.has-text-warning {
-    color: var(--link-color) !important;
+  color: var(--link-color) !important;
 }
 
-pre, code {
-    background-color: #dbdbdb !important;
-    color: #4a4a4a !important;
+pre,
+code {
+  background-color: #dbdbdb !important;
+  color: #4a4a4a !important;
 }
 
-body.is-dark-mode pre, body.is-dark-mode code {
-    background-color: #4a4a4a !important;
-    height: 100% !important;
-    color: #f5f5f5 !important;
+body.is-dark-mode pre,
+body.is-dark-mode code {
+  background-color: #4a4a4a !important;
+  height: 100% !important;
+  color: #f5f5f5 !important;
 }
 
 .box {
-    background-color: var(--card-background) !important;
+  background-color: var(--card-background) !important;
 }
 
 /* Fuerza el color del texto para p y strong dentro de .box */
-.box p, .box strong, .box a {
-    color: var(--text-color) !important;
+.box p,
+.box strong,
+.box a {
+  color: var(--text-color) !important;
 }
 
 /* Estilos para inputs y placeholders */
 .input-float {
-    position: relative;
-    margin-top: 1.5rem;
+  position: relative;
+  margin-top: 1.5rem;
 }
 
 .input-float .input::placeholder {
-    transition: transform 0.2s ease-in-out, font-size 0.2s ease-in-out;
-    transform-origin: left;
-    color: var(--label-color) !important;
+  transition: transform 0.2s ease-in-out, font-size 0.2s ease-in-out;
+  transform-origin: left;
+  color: var(--label-color) !important;
 }
 
 .input-float .input:focus::placeholder,
 .input-float .input:not(:placeholder-shown)::placeholder {
-    transform: translateY(-1.75em);
-    font-size: 0.75em;
-    color: var(--label-color) !important;
+  transform: translateY(-1.75em);
+  font-size: 0.75em;
+  color: var(--label-color) !important;
 }
 
 .input.is-rounded {
-    background-color: var(--input-background-color) !important;
-    border-color: var(--input-background-color) !important;
-    color: var(--input-text-color) !important;
+  background-color: var(--input-background-color) !important;
+  border-color: var(--input-background-color) !important;
+  color: var(--input-text-color) !important;
 }
 
 body.is-dark-mode .input.is-rounded {
-    background-color: var(--input-background-color) !important;
-    border-color: var(--input-background-color) !important;
-    color: var(--input-text-color) !important;
+  background-color: var(--input-background-color) !important;
+  border-color: var(--input-background-color) !important;
+  color: var(--input-text-color) !important;
 }
 
 .input-float .input {
-    padding-top: 1em;
-    height: 3em;
-    padding-left: calc(1em + 2.5em);
+  padding-top: 1em;
+  height: 3em;
+  padding-left: calc(1em + 2.5em);
 }
 
 .input-float .icon.is-left {
-    pointer-events: none;
-    z-index: 1;
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Clases de utilidad */
 .is-relative {
-    position: relative !important;
+  position: relative !important;
 }
 
 .is-flex {
-    display: flex !important;
+  display: flex !important;
 }
 
 .is-align-items-center {
-    align-items: center !important;
+  align-items: center !important;
 }
 
 .is-justify-content-center {
-    justify-content: center !important;
+  justify-content: center !important;
 }
 
 .mt-4 {
-    margin-top: 1.5rem !important;
+  margin-top: 1.5rem !important;
 }
 
 /* Estilos de la barra de navegación */
 .navbar {
-    background-color: var(--navbar-background) !important;
+  background-color: var(--navbar-background) !important;
 }
 
-.navbar-item, .navbar-link {
-    color: var(--navbar-text) !important;
+.navbar-item,
+.navbar-link {
+  color: var(--navbar-text) !important;
 }
 
 .navbar-burger span {
-    background-color: var(--navbar-text) !important;
+  background-color: var(--navbar-text) !important;
 }
 
 /* Estilos para el menú desplegable en modo oscuro */
 .navbar-menu {
-    background-color: var(--navbar-background) !important;
+  background-color: var(--navbar-background) !important;
 }
 
+
+/*TERMINANTEMENTE PROHIBIDO VOLVER A TOCAR ESTE MODO Y ESTE COLOR*/
 /* Estilo para el navbar-brand en modo oscuro */
-body.is-dark-mode .navbar-brand a, body.is-dark-mode .navbar-brand span {
-    color: #ffb700 !important; /* Color naranja */
+body.is-dark-mode .navbar-brand a,
+body.is-dark-mode .navbar-brand span {
+  color: var(--label-color) !important;
+}
+
+/* Nuevo estilo: color del texto de navbar-brand al pasar el mouse en modo oscuro */
+body.is-dark-mode .navbar-brand a:hover,
+body.is-dark-mode .navbar-brand a:hover span {
+    color: #000000 !important; /* Color negro */
 }
 
 /* Eliminar el espacio del "section" en páginas de formulario */
 section.is-form {
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-    flex-grow: 1 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  flex-grow: 1 !important;
 }
 
 /* Añadir padding a los lados del contenedor principal */
 .container-movil {
-    padding: 0 1rem !important;
+  padding: 0 1rem !important;
 }
 
 .main-content-container {
-    flex-grow: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 1px !important; /* Necesario para que flexbox funcione correctamente */
+  flex-grow: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 1px !important;
+  /* Necesario para que flexbox funcione correctamente */
+}
+
+/* Estilos para el modo oscuro */
+body.is-dark-mode .user-card-column .subtitle {
+  color: var(--user-text-color-dark) !important;
+}
+
+body.is-dark-mode .user-card-column .buttons .button.is-info.is-rounded {
+  color: var(--button-text-color-dark) !important;
+}
+
+/* Estilo para la tabla en modo oscuro */
+body.is-dark-mode .table tr,
+body.is-dark-mode .table th,
+body.is-dark-mode .table td {
+  background-color: var(--input-background-color) !important;
+  color: var(--table-text-color-dark) !important;
+}
+
+body.is-dark-mode .table thead th,
+body.is-dark-mode .table tbody td {
+  border-color: #4a4a4a !important;
+}
+
+/* Estilo para la tarjeta de usuario en modo oscuro */
+body.is-dark-mode .user-card {
+  background-color: var(--input-background-color) !important;
+  border-color: #4a4a4a !important;
+}
+
+/* Nuevo estilo para el título de "Detalles de Usuario" en modo oscuro */
+body.is-dark-mode .is-dark-mode-warning {
+    color: var(--label-color) !important;
 }

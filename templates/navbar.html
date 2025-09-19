@@ -1,6 +1,7 @@
 <!-- AQUI EN EL NAVBAR ES TOTALMENTE PROHIBIDO INCRUSTAR FUNCIONES, SCRIPTS Y CSS
-TODO DEBE ESTAN EL NAVBAR.JS Y BASE.CSS
- -->
+TODO DEBE ESTAR EN EL NAVBAR.JS Y BASE.CSS
+-->
+
 <nav class="navbar is-warning" role="navigation" aria-label="main navigation">
 <div class="navbar-brand">
 <a class="navbar-item" href="{{ url_for('home') }}">
@@ -8,64 +9,66 @@ TODO DEBE ESTAN EL NAVBAR.JS Y BASE.CSS
 <span class="has-text-weight-bold is-size-4 ">Transavi CR</span>
 </a>
 
-    <!-- Botón para el menú de hamburguesa en móviles -->
-    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
-        <span aria-hidden="true"></span>
-        <span aria-hidden="true"></span>
-        <span aria-hidden="true"></span>
-    </a>
+<!-- Botón para el menú de hamburguesa en móviles -->
+<a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+    <span aria-hidden="true"></span>
+    <span aria-hidden="true"></span>
+    <span aria-hidden="true"></span>
+</a>
+
 </div>
 
 <div id="navbarBasicExample" class="navbar-menu">
-    <div class="navbar-start">
-        {% if current_user.is_authenticated %}
-            <a class="navbar-item" href="{{ url_for('home') }}">
-                <span class="icon"><i class="fas fa-home"></i></span>
-                <span>Inicio</span>
-            </a>
-            <a class="navbar-item" href="{{ url_for('perfil') }}">
-                <span class="icon"><i class="fas fa-user-circle"></i></span>
-                <span>Perfil</span>
-            </a>
-            {% if current_user.rol == 'Administrador' %}
-            <a class="navbar-item" href="{{ url_for('usuarios') }}">
-                <span class="icon"><i class="fas fa-users"></i></span>
-                <span>Ver Usuarios</span>
+<div class="navbar-start">
+{% if current_user.is_authenticated %}
+<a class="navbar-item" href="{{ url_for('home') }}">
+<span class="icon"><i class="fas fa-home"></i></span>
+<span>Inicio</span>
+</a>
+<a class="navbar-item" href="{{ url_for('perfil') }}">
+<span class="icon"><i class="fas fa-user-circle"></i></span>
+<span>Perfil</span>
+</a>
+{% if current_user.rol in ['Administrador', 'Superusuario'] %}
+<a class="navbar-item" href="{{ url_for('usuarios') }}">
+<span class="icon"><i class="fas fa-users"></i></span>
+<span>Ver Usuarios</span>
+</a>
+{% endif %}
+{% else %}
+<a class="navbar-item" href="{{ url_for('login') }}">
+<span class="icon"><i class="fas fa-sign-in-alt"></i></span>
+<span>Login</span>
+</a>
+<a class="navbar-item" href="{{ url_for('register') }}">
+<span class="icon"><i class="fas fa-user-plus"></i></span>
+<span>Registrar</span>
+</a>
+{% endif %}
+</div>
+
+<div class="navbar-end">
+    <div class="navbar-item">
+        <div class="buttons">
+            <!-- Botón para cambiar de tema (claro/oscuro) -->
+            <button id="theme-switcher" class="button is-ghost is-rounded has-text-white">
+                <span class="icon is-small">
+                    <i class="fas fa-sun"></i>
+                </span>
+            </button>
+            {% if current_user.is_authenticated %}
+            <hr>
+            <a class="button is-light" href="{{ url_for('logout') }}">
+                <span class="icon">
+                    <i class="fas fa-sign-out-alt"></i>
+                </span>
+                <span>Cerrar Sesión</span>
             </a>
             {% endif %}
-        {% else %}
-            <a class="navbar-item" href="{{ url_for('login') }}">
-                <span class="icon"><i class="fas fa-sign-in-alt"></i></span>
-                <span>Login</span>
-            </a>
-            <a class="navbar-item" href="{{ url_for('register') }}">
-                <span class="icon"><i class="fas fa-user-plus"></i></span>
-                <span>Registrar</span>
-            </a>
-        {% endif %}
-    </div>
-
-    <div class="navbar-end">
-        <div class="navbar-item">
-            <div class="buttons">
-                <!-- Botón para cambiar de tema (claro/oscuro) -->
-                <button id="theme-switcher" class="button is-ghost is-rounded has-text-white">
-                    <span class="icon is-small">
-                        <i class="fas fa-sun"></i>
-                    </span>
-                </button>
-                {% if current_user.is_authenticated %}
-                <hr>
-                <a class="button is-light" href="{{ url_for('logout') }}">
-                    <span class="icon">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </span>
-                    <span>Cerrar Sesión</span>
-                </a>
-                {% endif %}
-            </div>
         </div>
     </div>
+</div>
+
 </div>
 
 </nav>
