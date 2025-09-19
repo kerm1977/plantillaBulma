@@ -253,7 +253,6 @@ body.is-dark-mode .input.is-rounded {
   background-color: var(--navbar-background) !important;
 }
 
-
 /*TERMINANTEMENTE PROHIBIDO VOLVER A TOCAR ESTE MODO Y ESTE COLOR*/
 /* Estilo para el navbar-brand en modo oscuro */
 body.is-dark-mode .navbar-brand a,
@@ -323,4 +322,15 @@ body.is-dark-mode .is-dark-mode-warning {
 /* Estilo para el encabezado de la tabla en ver_usuarios.html en modo oscuro */
 body.is-dark-mode table.table thead th {
   color: var(--label-color) !important;
+}
+
+/* Estilos para el logo y su contenedor en modo móvil */
+@media screen and (max-width: 768px) {
+  .navbar-brand {
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  .navbar-logo {
+    max-height: 35.2px !important; /* Aumento del 10% sobre 32px */
+  }
 }

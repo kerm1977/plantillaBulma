@@ -3,10 +3,11 @@ TODO DEBE ESTAR EN EL NAVBAR.JS Y BASE.CSS
 -->
 
 <nav class="navbar is-warning" role="navigation" aria-label="main navigation">
-<div class="navbar-brand">
+<div class="navbar-brand is-flex is-justify-content-center">
 <a class="navbar-item" href="{{ url_for('home') }}">
 <!-- Puedes reemplazar este texto con un logo si lo deseas -->
-<span class="has-text-weight-bold is-size-4 ">Transavi CR</span>
+<img src="{{ url_for('static', filename='img/logo.png') }}" alt="Transavi CR Logo" style="max-height: 32px; width: auto;" class="is-rounded navbar-logo">
+<span class="is-hidden-desktop has-text-weight-bold is-size-4">Transavi C.R.</span>
 </a>
 
 <!-- Botón para el menú de hamburguesa en móviles -->
