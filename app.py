@@ -122,6 +122,7 @@ def login():
     if request.method == 'POST':
         user_input = request.form.get('username_or_email_or_phone')
         password = request.form.get('password')
+        remember_me = True if request.form.get('remember_me') else False
         
         # Limpia cualquier espacio en blanco en la contraseña
         password = password.strip()
@@ -131,7 +132,7 @@ def login():
         
         if user_data:
             user_obj = User(user_data)
-            login_user(user_obj)
+            login_user(user_obj, remember=remember_me)
             return redirect(url_for('perfil'))
         else:
             flash('Usuario o contraseña incorrectos.', 'danger')

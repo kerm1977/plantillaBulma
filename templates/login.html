@@ -59,3 +59,7 @@ TODO DEBE ESTAR EN UN ARCHIVO POR APARTE Y LINKEADO A  BASE.HTML-->
 
 {% endblock %}
 
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/login.js') }}"></script>
+{% endblock %}
