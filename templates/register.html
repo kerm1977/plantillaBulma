@@ -1,7 +1,8 @@
+<!-- AQUI ES TOTALMENTE PROHIBIDO INCRUSTAR FUNCIONES, SCRIPTS Y CSS
+TODO DEBE ESTAR EN UN ARCHIVO POR APARTE Y LINKEADO A  BASE.HTML-->
+
 {% extends "base.html" %}
-
 {% block title %}Registrarse{% endblock %}
-
 {% block content %}
 <div class="container mt-6">
     <div class="columns is-centered">
@@ -84,9 +85,4 @@
     </div>
 </div>
 
-{% endblock %}
-
-{% block scripts %}
-{{ super() }}
-<script src="{{ url_for('static', filename='js/buttons.js') }}"></script>
 {% endblock %}

@@ -199,17 +199,28 @@ def update_user(user_id, form_data):
         from app import get_db_connection
         conn = get_db_connection()
         
+        # Obtener los datos del formulario de forma segura y validar que no estén vacíos
         nombre = form_data.get('nombre', '').strip().title()
         primer_apellido = form_data.get('primer_apellido', '').strip().title()
         segundo_apellido = form_data.get('segundo_apellido', '').strip().title()
         email = form_data.get('email', '').strip().lower()
         telefono = form_data.get('telefono', '').strip()
         rol = form_data.get('rol', '').strip()
-        
-        # Validación de campos obligatorios
-        if not all([nombre, primer_apellido, segundo_apellido, email, telefono, rol]):
-            return "Error: Todos los campos son obligatorios."
 
+        # Validación de campos obligatorios
+        if not nombre:
+            return "Error: El nombre es obligatorio."
+        if not primer_apellido:
+            return "Error: El primer apellido es obligatorio."
+        if not segundo_apellido:
+            return "Error: El segundo apellido es obligatorio."
+        if not email:
+            return "Error: El correo electrónico es obligatorio."
+        if not telefono:
+            return "Error: El teléfono es obligatorio."
+        if not rol:
+            return "Error: El rol es obligatorio."
+            
         # Validación de teléfono
         if not re.match(r'^\d{8}$', telefono):
             return "Error: El teléfono debe contener exactamente 8 dígitos numéricos."
@@ -222,7 +233,8 @@ def update_user(user_id, form_data):
         cursor = conn.cursor()
         
         # No permitir el cambio de rol si es el superusuario fijo
-        if find_user_by_id(user_id)['email'] == SUPERUSER_EMAIL and rol != 'Superusuario':
+        user_to_edit = find_user_by_id(user_id)
+        if user_to_edit and user_to_edit['email'] == SUPERUSER_EMAIL and rol != 'Superusuario':
             return "Error: No se puede cambiar el rol del superusuario principal."
             
         cursor.execute(

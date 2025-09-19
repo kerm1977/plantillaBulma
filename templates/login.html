@@ -1,3 +1,5 @@
+<!-- AQUI ES TOTALMENTE PROHIBIDO INCRUSTAR FUNCIONES, SCRIPTS Y CSS
+TODO DEBE ESTAR EN UN ARCHIVO POR APARTE Y LINKEADO A  BASE.HTML-->
 {% extends "base.html" %}
 
 {% block title %}Iniciar Sesión{% endblock %}
@@ -48,8 +50,8 @@
                 </form>
 
                 <div class="has-text-centered mt-5">
-                    <p class="mb-2">¿Olvidaste tu contraseña? <a href="#">Recordar</a></p>
-                    <p>¿No tienes una cuenta? <a href="{{ url_for('register') }}">Registrarme</a></p>
+                    <a href="#" style="color: #ff9cee;"><p class="mb-2">¿Olvidaste tu contraseña?</a></p>
+                    <a href="{{ url_for('register') }}" style="color: #85e3ff;"><p>Ya tengo una cuenta</a></p>
                 </div>
             </div>
         </div>
@@ -57,35 +59,3 @@
 
 {% endblock %}
 
-{% block scripts %}
-{{ super() }}
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const togglePassword = document.getElementById('toggle_password');
-        const passwordInput = document.getElementById('password_input');
-
-        if (togglePassword) {
-            togglePassword.addEventListener('click', function (e) {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-
-                const icon = this.querySelector('i');
-                if (type === 'password') {
-                    icon.classList.remove('fa-eye-slash');
-                    icon.classList.add('fa-eye');
-                } else {
-                    icon.classList.remove('fa-eye');
-                    icon.classList.add('fa-eye-slash');
-                }
-            });
-        }
-
-        document.querySelectorAll('.notification .delete').forEach(($delete) => {
-            const $notification = $delete.parentNode;
-            $delete.addEventListener('click', () => {
-                $notification.parentNode.removeChild($notification);
-            });
-        });
-    });
-</script>
-{% endblock %}

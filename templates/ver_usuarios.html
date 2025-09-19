@@ -9,13 +9,17 @@
     border-radius: 6px;
     padding: 1.5rem;
   }
+
+  .user-detail-p {
+    margin-bottom: 0.25em !important;
+  }
 </style>
 <div class="container mt-6">
   <h1 class="title is-5 has-text-centered">¡Usuarios Registrados!</h1>
 
   <div class="field">
     <div class="control has-icons-left">
-      <input id="search-input" class="input is-rounded is-medium" type="text" placeholder="Buscar por cualquier criterio...">
+      <input id="search-input" class="input is-rounded is-medium" type="text" placeholder="Buscar Usuario">
       <span class="icon is-left">
         <i class="fas fa-search"></i>
       </span>
@@ -34,10 +38,10 @@
             </div>
           </div>
           <div class="content">
-            <p><strong>ID:</strong> <span class="user-id">{{ user.id }}</span></p>
-            <p><strong>Email:</strong> <span class="user-email">{{ user.email }}</span></p>
-            <p><strong>Teléfono:</strong> <span class="user-phone">{{ user.telefono }}</span></p>
-            <p><strong>Rol:</strong> <span class="user-rol">{{ user.rol }}</span></p>
+            <p class="user-detail-p"><strong>ID:</strong> <span class="user-id">{{ user.id }}</span></p>
+            <p class="user-detail-p"><strong>Email:</strong> <span class="user-email">{{ user.email }}</span></p>
+            <p class="user-detail-p"><strong>Teléfono:</strong> <span class="user-phone">{{ user.telefono }}</span></p>
+            <p class="user-detail-p"><strong>Rol:</strong> <span class="user-rol">{{ user.rol }}</span></p>
             <br>
             <div class="buttons is-centered is-flex is-flex-wrap-nowrap">
               <a href="{{ url_for('editar_usuario', user_id=user.id) }}" class="button is-info is-rounded is-flex-grow-1 is-small">
