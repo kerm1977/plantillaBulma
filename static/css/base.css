@@ -319,3 +319,8 @@ body.is-dark-mode .user-card {
 body.is-dark-mode .is-dark-mode-warning {
     color: var(--label-color) !important;
 }
+
+/* Estilo para el encabezado de la tabla en ver_usuarios.html en modo oscuro */
+body.is-dark-mode table.table thead th {
+  color: var(--label-color) !important;
+}
