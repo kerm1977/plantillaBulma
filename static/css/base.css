@@ -11,6 +11,8 @@
     --link-hover-color: #363636;
     --strong-text-color: #363636;
     --label-color: #363636;
+    --input-background-color: #f5f5f5;
+    --input-text-color: #363636;
 }
 
 body.is-dark-mode {
@@ -24,7 +26,9 @@ body.is-dark-mode {
     --link-color: #48c78e;
     --link-hover-color: #f5f5f5;
     --strong-text-color: #ffabab;
-    --label-color: #ffabab;
+    --label-color: #ffb700; /* Color de labels en modo oscuro */
+    --input-background-color: #363636; /* Color de fondo de inputs en modo oscuro */
+    --input-text-color: #f5f5f5; /* Color de texto de inputs en modo oscuro */
 }
 
 /* Aplicar transiciones suaves para un cambio de tema agradable */
@@ -153,6 +157,21 @@ body.is-dark-mode pre, body.is-dark-mode code {
 
 .label {
     color: var(--label-color) !important;
+}
+
+/* Estilos para inputs y placeholders */
+.input.is-rounded {
+    background-color: var(--input-background-color) !important;
+    border-color: var(--input-background-color) !important;
+    color: var(--input-text-color) !important;
+}
+.input.is-rounded::placeholder {
+    color: var(--input-text-color) !important;
+}
+body.is-dark-mode .input.is-rounded {
+    background-color: var(--input-background-color) !important;
+    border-color: var(--input-background-color) !important;
+    color: var(--input-text-color) !important;
 }
 
 /* Clases de utilidad */

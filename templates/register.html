@@ -9,28 +9,28 @@
             <h1 class="title has-text-centered">Registrarse</h1>
             <form method="POST" action="{{ url_for('register') }}">
                 <div class="field">
-                    <label class="label">Nombre</label>
+                    <label class="label has-text-warning">Nombre</label>
                     <div class="control">
                         <input class="input is-rounded" type="text" name="nombre" required>
                     </div>
                 </div>
 
                 <div class="field">
-                    <label class="label">Primer Apellido</label>
+                    <label class="label has-text-warning">Primer Apellido</label>
                     <div class="control">
                         <input class="input is-rounded" type="text" name="primer_apellido" required>
                     </div>
                 </div>
 
                 <div class="field">
-                    <label class="label">Segundo Apellido</label>
+                    <label class="label has-text-warning">Segundo Apellido</label>
                     <div class="control">
                         <input class="input is-rounded" type="text" name="segundo_apellido" required>
                     </div>
                 </div>
 
                 <div class="field">
-                    <label class="label">Email</label>
+                    <label class="label has-text-warning">Email</label>
                     <div class="control has-icons-left">
                         <input class="input is-rounded" type="email" name="email" required>
                         <span class="icon is-small is-left"><i class="fas fa-envelope"></i></span>
@@ -38,7 +38,7 @@
                 </div>
 
                 <div class="field">
-                    <label class="label">Teléfono</label>
+                    <label class="label has-text-warning">Teléfono</label>
                     <div class="control has-icons-left">
                         <input class="input is-rounded" type="tel" name="telefono" maxlength="8" pattern="^\d{8}$" title="El teléfono debe contener exactamente 8 dígitos numéricos" required>
                         <span class="icon is-small is-left"><i class="fas fa-phone"></i></span>
@@ -46,7 +46,7 @@
                 </div>
 
                 <div class="field">
-                    <label class="label">Contraseña</label>
+                    <label class="label has-text-warning">Contraseña</label>
                     <div class="control has-icons-left has-icons-right">
                         <input class="input is-rounded" type="password" name="password" id="password_input" required>
                         <span class="icon is-small is-left"><i class="fas fa-lock"></i></span>
@@ -57,7 +57,7 @@
                 </div>
 
                 <div class="field">
-                    <label class="label">Verificar Contraseña</label>
+                    <label class="label has-text-warning">Verificar Contraseña</label>
                     <div class="control has-icons-left has-icons-right">
                         <input class="input is-rounded" type="password" name="verificar_password" id="confirm_password_input" required>
                         <span class="icon is-small is-left"><i class="fas fa-lock"></i></span>

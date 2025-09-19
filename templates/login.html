@@ -10,7 +10,7 @@
                 <h1 class="title has-text-centered ">Iniciar Sesión</h1>
                 <form method="POST" action="{{ url_for('login') }}">
                     <div class="field">
-                        <label class="label">Usuario, Email o Teléfono</label>
+                        <label class="label has-text-warning">Usuario, Email o Teléfono</label>
                         <div class="control has-icons-left">
                             <input class="input is-rounded" type="text" name="username_or_email_or_phone" required>
                             <span class="icon is-small is-left"><i class="fas fa-user"></i></span>
@@ -18,7 +18,7 @@
                     </div>
 
                     <div class="field">
-                        <label class="label">Contraseña</label>
+                        <label class="label has-text-warning">Contraseña</label>
                         <div class="control has-icons-left has-icons-right">
                             <input class="input is-rounded" type="password" name="password" id="password_input" required>
                             <span class="icon is-small is-left"><i class="fas fa-lock"></i></span>
