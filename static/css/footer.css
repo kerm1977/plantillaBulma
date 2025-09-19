@@ -1,3 +1,6 @@
+/*NO TOCAR NUNCA EL QUE EL FOOTER ESTÉ TOTALMENTE UNIDO A LA PARTE INFERIOR DE LA VENTANA*/
+
+
 /* Variables para el footer */
 :root {
     --footer-background: #ffc107; /* Color warning */
@@ -20,6 +23,12 @@ body.is-dark-mode {
     justify-content: center !important;
     background-color: var(--footer-background) !important;
     color: var(--footer-text) !important;
+    /* Estilos para el footer fijo */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000; /* Asegurar que el footer esté encima de otros elementos */
 }
 
 /* Estilo para los enlaces del footer */

@@ -89,8 +89,11 @@ html, body, .navbar, .button, .back-button, .back-to-top-button, .box {
 }
 
 /* Estilos globales y reutilizables */
-html, body {
+/* NOTA: Esta sección fue modificada para asegurar que el modo oscuro funcione correctamente y no debe ser alterada. */
+html {
+    background-color: var(--background-color) !important;
     height: 100% !important;
+    min-height: 100vh !important;
 }
 
 body {
@@ -104,6 +107,12 @@ body {
 
 .content-container {
     flex-grow: 1 !important;
+    padding: 0 1.5rem !important;
+}
+
+/* Anular el margen del último elemento del contenido */
+.content-container > *:last-child {
+    margin-bottom: 0 !important;
 }
 
 .content a, .content a:hover {
@@ -129,6 +138,7 @@ pre, code {
 
 body.is-dark-mode pre, body.is-dark-mode code {
     background-color: #4a4a4a !important;
+    height: 100% !important;
     color: #f5f5f5 !important;
 }
 
@@ -182,4 +192,23 @@ body.is-dark-mode pre, body.is-dark-mode code {
 /* Estilos para el menú desplegable en modo oscuro */
 .navbar-menu {
     background-color: var(--navbar-background) !important;
+}
+
+/* Eliminar el espacio del "section" en páginas de formulario */
+section.is-form {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    flex-grow: 1 !important;
+}
+
+/* Añadir padding a los lados del contenedor principal */
+.container-movil {
+    padding: 0 1rem !important;
+}
+
+.main-content-container {
+    flex-grow: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 1px !important; /* Necesario para que flexbox funcione correctamente */
 }
