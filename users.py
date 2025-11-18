@@ -116,57 +116,78 @@ class User(UserMixin):
         return str(self.id)
 
 
-def get_user_by_id(user_id):
+def get_user_by_id(user_id, conn=None):
     """
-    Busca un usuario por su ID y devuelve una instancia de User o None.
+    Busca un usuario por su ID y devuelve un diccionario con sus datos.
     
     Args:
-        user_id (int): El ID del usuario.
+        user_id (int): ID del usuario a buscar.
+        conn: Conexión a la base de datos opcional.
         
     Returns:
-        User or None: Instancia de User o None si no se encuentra.
+        dict or None: Diccionario con los datos del usuario si se encuentra, None en caso contrario.
     """
-    try:
+    from app import get_db_connection
+    
+    # Si no se proporciona una conexión, crear una nueva
+    close_conn = False
+    if conn is None:
         conn = get_db_connection()
-        user_data = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-        conn.close()
+        close_conn = True
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+        user_data = cursor.fetchone()
         
         if user_data:
-            return User(
-                id=user_data['id'],
-                usuario=user_data['usuario'],
-                nombre=user_data['nombre'],
-                primer_apellido=user_data['primer_apellido'],
-                segundo_apellido=user_data['segundo_apellido'],
-                email=user_data['email'],
-                telefono=user_data['telefono'],
-                password_hash=user_data['password_hash'],
-                rol=user_data['rol']
-            )
+            # Obtener los nombres de las columnas
+            column_names = [column[0] for column in cursor.description]
+            # Convertir a diccionario
+            return dict(zip(column_names, user_data))
         return None
+        
     except Exception as e:
-        print(f"Error al obtener usuario por ID {user_id}: {e}")
+        print(f"Error en get_user_by_id para ID {user_id}: {str(e)}")
         return None
+        
+    finally:
+        # Cerrar la conexión solo si la creamos aquí
+        if close_conn and conn:
+            conn.close()
 
 
-def get_user_by_email(email):
+def get_user_by_email(email, conn=None):
     """
     Busca un usuario por su email y devuelve los datos brutos.
     
     Args:
         email (str): El email del usuario.
+        conn: Conexión a la base de datos. Si es None, se crea una nueva.
         
     Returns:
-        sqlite3.Row or None: Los datos del usuario o None si no se encuentra.
+        dict or None: Diccionario con los datos del usuario o None si no se encuentra.
     """
+    should_close = False
     try:
-        conn = get_db_connection()
-        user_data = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        conn.close()
-        return user_data
+        if conn is None:
+            conn = get_db_connection()
+            should_close = True
+            
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
+        user_data = cursor.fetchone()
+        
+        if user_data:
+            # Convertir de sqlite3.Row a diccionario
+            return dict(zip([column[0] for column in cursor.description], user_data))
+        return None
     except Exception as e:
         print(f"Error al obtener usuario por email {email}: {e}")
         return None
+    finally:
+        if should_close and conn:
+            conn.close()
 
 
 # ----------------------------------------------------
@@ -316,21 +337,33 @@ def update_user(user_id, nombre, primer_apellido, segundo_apellido, email, telef
         return False, 'Error inesperado al intentar actualizar usuario.'
 
 
-def get_all_users():
+def get_all_users(conn=None):
     """
     Obtiene todos los usuarios de la base de datos, ordenados por nombre.
     
+    Args:
+        conn: Conexión a la base de datos. Si es None, se crea una nueva.
+    
     Returns:
-        list: Lista de objetos sqlite3.Row con los datos de los usuarios.
+        list: Lista de diccionarios con la información de los usuarios.
     """
+    should_close = False
     try:
-        conn = get_db_connection()
-        users_data = conn.execute("SELECT id, usuario, nombre, primer_apellido, segundo_apellido, email, telefono, rol FROM users ORDER BY nombre, primer_apellido").fetchall()
-        conn.close()
-        return users_data
+        if conn is None:
+            conn = get_db_connection()
+            should_close = True
+            
+        users = conn.execute(
+            'SELECT * FROM users ORDER BY nombre, primer_apellido, segundo_apellido'
+        ).fetchall()
+        
+        return users
     except Exception as e:
-        print(f"Error al obtener todos los usuarios: {e}")
+        print(f"Error al obtener usuarios: {e}")
         return []
+    finally:
+        if should_close and conn:
+            conn.close()
 
 
 def delete_user(user_id):

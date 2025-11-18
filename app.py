@@ -1,7 +1,7 @@
 # Importaciones necesarias para la aplicación Flask
 import os
 import sqlite3
-from flask import Flask, render_template, request, redirect, url_for, flash, g
+from flask import Flask, render_template, request, redirect, url_for, flash, g, session
 from flask_bcrypt import Bcrypt
 import sqlite3
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -15,8 +15,17 @@ import users as user_module
 
 # Inicializa la aplicación Flask
 app = Flask(__name__, static_folder='static', template_folder='templates')
-# Genera una clave secreta fuerte de 24 bytes
-app.config['SECRET_KEY'] = os.urandom(24) 
+
+# Configuración de la aplicación
+app.secret_key = os.urandom(24)  # Clave secreta para las sesiones
+app.config.update(
+    SESSION_COOKIE_NAME='plantilla_session',
+    PERMANENT_SESSION_LIFETIME=3600,  # 1 hora
+    SESSION_COOKIE_SECURE=False,      # Cambiar a True en producción con HTTPS
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    SESSION_REFRESH_EACH_REQUEST=True
+)
 
 # Inicializa Bcrypt para el hash de contraseñas
 bcrypt = Bcrypt(app)
@@ -78,11 +87,44 @@ def load_user(user_id):
     """
     Cargador de usuario para Flask-Login.
     """
-    # get_user_by_id ya maneja la conexión a la base de datos internamente
-    user = user_module.get_user_by_id(user_id)
-    if user:
+    if not user_id or not str(user_id).isdigit():
+        print(f"ID de usuario inválido: {user_id}")
+        return None
+    
+    try:
+        # Usar la función get_user_by_id del módulo users
+        user_dict = user_module.get_user_by_id(user_id)
+        
+        if not user_dict:
+            print(f"No se encontró el usuario con ID: {user_id}")
+            return None
+            
+        # Verificar que los campos requeridos estén presentes
+        if 'id' not in user_dict or not user_dict['id']:
+            print(f"Datos de usuario incompletos para ID: {user_id}")
+            return None
+            
+        # Crear una instancia de User con los datos del diccionario
+        user = User(
+            id=user_dict['id'],
+            usuario=user_dict.get('usuario', ''),
+            nombre=user_dict.get('nombre', ''),
+            primer_apellido=user_dict.get('primer_apellido', ''),
+            segundo_apellido=user_dict.get('segundo_apellido', ''),
+            email=user_dict.get('email', ''),
+            telefono=user_dict.get('telefono', ''),
+            rol=user_dict.get('rol', 'Usuario'),
+            password_hash=user_dict.get('password_hash')
+        )
+        
+        print(f"Usuario cargado exitosamente: {user.id} - {user.email}")
         return user
-    return None
+        
+    except Exception as e:
+        print(f"Error en load_user para ID {user_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 @app.before_request
 def create_tables():
@@ -127,13 +169,19 @@ def login():
         try:
             # Verificar si es el superusuario
             if email == 'kenth1977@gmail.com':
+                print("Intento de inicio de sesión como superusuario detectado")
                 with get_db_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
                     existing_user = cursor.fetchone()
                     
                     # Convertir a diccionario para manejo más seguro
-                    user_dict = dict(zip([column[0] for column in cursor.description], existing_user)) if existing_user else None
+                    user_dict = None
+                    if existing_user:
+                        user_dict = dict(zip([column[0] for column in cursor.description], existing_user))
+                        print(f"Datos del superusuario encontrados: {user_dict}")
+                    else:
+                        print("No se encontró el superusuario en la base de datos")
                     
                     if not user_dict:
                         # Crear el superusuario si no existe
@@ -151,57 +199,38 @@ def login():
                                 'Admin'         # Apellido
                             ))
                             conn.commit()
-                            flash('Superusuario creado exitosamente. Por favor inicia sesión.', 'success')
-                            return redirect(url_for('login'))
+                            print("Superusuario creado exitosamente")
+                            # Obtener el ID del usuario recién creado
+                            cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
+                            existing_user = cursor.fetchone()
+                            user_dict = dict(zip([column[0] for column in cursor.description], existing_user))
                         except Exception as e:
                             flash(f'Error al crear el superusuario: {str(e)}', 'danger')
                             return render_template('login.html')
                     
                     try:
-                        # Verificar si la columna password_hash existe
-                        if 'password_hash' not in user_dict:
-                            # Si no existe, actualizar la tabla para agregarla
-                            try:
-                                cursor.execute('ALTER TABLE users ADD COLUMN password_hash TEXT')
-                                conn.commit()
-                                # Establecer un valor por defecto
-                                user_dict['password_hash'] = ''
-                            except sqlite3.OperationalError as e:
-                                if 'duplicate column name' not in str(e):
-                                    raise
+                        print("Verificando credenciales del superusuario...")
                         
-                        # Obtener el hash de la contraseña
-                        password_hash = user_dict.get('password_hash', '')
-                        
-                        # Si el hash no es válido o no coincide, actualizarlo
-                        if not password_hash or not isinstance(password_hash, str) or \
-                           not password_hash.startswith(('$2b$', '$2a$')) or \
-                           not bcrypt.check_password_hash(password_hash, 'CR129x7848n'):
-                            
-                            hashed_password = bcrypt.generate_password_hash('CR129x7848n').decode('utf-8')
-                            
-                            # Verificar si la columna rol existe
-                            cursor.execute("PRAGMA table_info(users)")
-                            columns = [column[1] for column in cursor.fetchall()]
-                            
-                            if 'rol' not in columns:
-                                cursor.execute('ALTER TABLE users ADD COLUMN rol TEXT DEFAULT "Usuario"')
-                                conn.commit()
-                            
-                            cursor.execute('''
-                                UPDATE users 
-                                SET password_hash = ?, rol = 'Superusuario'
-                                WHERE email = ?
-                            ''', (hashed_password, email))
-                            conn.commit()
-                            password_hash = hashed_password
-                            user_dict['rol'] = 'Superusuario'
-                        
-                        # Verificar la contraseña proporcionada
-                        if not bcrypt.check_password_hash(password_hash, password):
+                        # Verificar la contraseña directamente (solo para superusuario)
+                        if password != 'CR129x7848n':
                             flash('Contraseña incorrecta para el superusuario.', 'danger')
+                            print("Contraseña incorrecta para el superusuario")
                             return render_template('login.html')
                         
+                        print("Contraseña correcta, actualizando rol si es necesario...")
+                        
+                        # Asegurarse de que el rol sea Superusuario
+                        if 'rol' not in user_dict or user_dict.get('rol') != 'Superusuario':
+                            print("Actualizando rol a Superusuario...")
+                            cursor.execute("""
+                                UPDATE users 
+                                SET rol = 'Superusuario'
+                                WHERE email = ?
+                            """, (email,))
+                            conn.commit()
+                            user_dict['rol'] = 'Superusuario'
+                        
+                        print("Creando objeto User...")
                         # Crear objeto User para el superusuario
                         user = User(
                             id=user_dict.get('id'),
@@ -211,14 +240,29 @@ def login():
                             segundo_apellido=user_dict.get('segundo_apellido', ''),
                             email=email,
                             telefono=user_dict.get('telefono', ''),
-                            rol=user_dict.get('rol', 'Superusuario'),
-                            password_hash=password_hash
+                            rol='Superusuario',
+                            password_hash=user_dict.get('password_hash', '')
                         )
                         
-                        login_user(user)
+                        print("Cerrando cualquier sesión existente...")
+                        # Forzar cierre de cualquier sesión existente
+                        logout_user()
+                        
+                        print("Iniciando nueva sesión...")
+                        # Iniciar sesión con el usuario
+                        login_user(user, remember=True)
+                        
+                        # Configurar la sesión
+                        from flask import session
+                        session.permanent = True
+                        
+                        print(f"Sesión de superusuario iniciada: {user.id} - {user.email}")
+                        print(f"Usuario autenticado: {current_user.is_authenticated}")
+                        
                         flash('¡Bienvenido Superusuario!', 'success')
-                        next_page = request.args.get('next')
-                        return redirect(next_page or url_for('dashboard'))
+                        next_page = request.args.get('next') or url_for('dashboard')
+                        print(f"Redirigiendo a: {next_page}")
+                        return redirect(next_page)
                         
                     except Exception as e:
                         flash(f'Error al verificar la contraseña del superusuario: {str(e)}', 'danger')
@@ -226,7 +270,7 @@ def login():
 
             # Para usuarios normales
             with get_db_connection() as conn:
-                user_data = user_module.get_user_by_email(email)
+                user_data = user_module.get_user_by_email(email, conn)
                 
                 if user_data:
                     # Convertir a diccionario para manejo más seguro
@@ -247,22 +291,50 @@ def login():
                         # Verificar la contraseña
                         if bcrypt.check_password_hash(password_hash, password):
                             # Reconstruir el objeto User solo si la contraseña es correcta
-                            user = User(
-                                id=user_dict.get('id'),
-                                usuario=user_dict.get('usuario', ''),
-                                nombre=user_dict.get('nombre', ''),
-                                primer_apellido=user_dict.get('primer_apellido', ''),
-                                segundo_apellido=user_dict.get('segundo_apellido', ''),
-                                email=email,
-                                telefono=user_dict.get('telefono', ''),
-                                rol=user_dict.get('rol', 'usuario'),
-                                password_hash=password_hash
-                            )
-                            
-                            login_user(user)
-                            flash('Inicio de sesión exitoso.', 'success')
-                            next_page = request.args.get('next')
-                            return redirect(next_page or url_for('dashboard'))
+                            try:
+                                user = User(
+                                    id=user_dict.get('id'),
+                                    usuario=user_dict.get('usuario', ''),
+                                    nombre=user_dict.get('nombre', ''),
+                                    primer_apellido=user_dict.get('primer_apellido', ''),
+                                    segundo_apellido=user_dict.get('segundo_apellido', ''),
+                                    email=email,
+                                    telefono=user_dict.get('telefono', ''),
+                                    rol=user_dict.get('rol', 'Usuario'),
+                                    password_hash=password_hash
+                                )
+                                
+                                # Verificar que el usuario tenga un ID válido
+                                if not user.id:
+                                    flash('Error: ID de usuario no válido.', 'danger')
+                                    return render_template('login.html')
+                                
+                                # Intentar hacer login
+                                # Forzar el cierre de cualquier sesión existente
+                                logout_user()
+                                
+                                # Iniciar nueva sesión
+                                login_user(user, remember=True)
+                                
+                                # Configurar la sesión para que dure más tiempo
+                                session.permanent = True
+                                
+                                print(f"Usuario autenticado: {user.id} - {user.email}")
+                                print(f"Sesión iniciada: {current_user.is_authenticated}")
+                                
+                                # Verificar si el usuario está autenticado antes de redirigir
+                                if current_user.is_authenticated:
+                                    flash('Inicio de sesión exitoso.', 'success')
+                                    next_page = request.args.get('next')
+                                    return redirect(next_page or url_for('dashboard'))
+                                else:
+                                    flash('Error al iniciar sesión. Por favor, intente nuevamente.', 'danger')
+                                    return render_template('login.html')
+                                
+                            except Exception as e:
+                                print(f"Error al crear el objeto User: {str(e)}")
+                                flash('Error al iniciar sesión. Por favor, intente nuevamente.', 'danger')
+                                return render_template('login.html')
                         else:
                             flash('Contraseña incorrecta.', 'danger')
                     except ValueError as e:
@@ -353,8 +425,23 @@ def usuarios():
     users_list = user_module.get_all_users(conn)
     conn.close()
     
-    # Convierte los Rows de SQLite a objetos User para un acceso más fácil en la plantilla
-    users_objects = [User(**dict(u)) for u in users_list]
+    # Mapea los campos de la base de datos a los parámetros del constructor de User
+    users_objects = []
+    for user_data in users_list:
+        user_dict = dict(user_data)
+        # Asegurarse de que todos los campos requeridos estén presentes
+        user_obj = User(
+            id=user_dict['id'],
+            usuario=user_dict.get('usuario', ''),
+            nombre=user_dict.get('nombre', ''),
+            primer_apellido=user_dict.get('primer_apellido', ''),
+            segundo_apellido=user_dict.get('segundo_apellido', ''),
+            email=user_dict.get('email', ''),
+            telefono=user_dict.get('telefono', ''),
+            rol=user_dict.get('rol', 'Usuario'),
+            password_hash=user_dict.get('password_hash')
+        )
+        users_objects.append(user_obj)
 
     return render_template('ver_usuarios.html', users=users_objects)
 

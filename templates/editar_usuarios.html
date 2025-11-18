@@ -5,90 +5,103 @@
 {% block content %}
 <div class="container mt-6">
     <div class="columns is-centered">
-        <div class="column is-6-tablet is-5-desktop is-4-widescreen">
-            <h1 class="title has-text-centered has-text-warning">
+        <div class="column is-5">
+            <h1 class="title has-text-centered">
                 Editar Perfil de {% if is_owner %}Mi Cuenta{% else %}{{ user.usuario }}{% endif %}
             </h1>
-            <div class="box custom-box">
-                <form method="POST">
-                    
-                    <div class="field">
-                        <label class="label has-text-warning">Nombre</label>
-                        <div class="control">
-                            <input class="input is-rounded" type="text" name="nombre" value="{{ request.form.get('nombre', user.nombre) }}" required>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="notification is-{{ category }} is-light is-rounded mb-4">
+                            <button class="delete"></button>
+                            {{ message }}
                         </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST">
+                <div class="field">
+                    <label class="label has-text-warning">Nombre</label>
+                    <div class="control has-icons-left">
+                        <input class="input is-rounded" type="text" name="nombre" value="{{ request.form.get('nombre', user.nombre) }}" required>
+                        <span class="icon is-small is-left"><i class="fas fa-user"></i></span>
                     </div>
+                </div>
 
-                    <div class="field">
-                        <label class="label has-text-warning">Primer Apellido</label>
-                        <div class="control">
-                            <input class="input is-rounded" type="text" name="primer_apellido" value="{{ request.form.get('primer_apellido', user.primer_apellido) }}" required>
-                        </div>
+                <div class="field">
+                    <label class="label has-text-warning">Primer Apellido</label>
+                    <div class="control has-icons-left">
+                        <input class="input is-rounded" type="text" name="primer_apellido" value="{{ request.form.get('primer_apellido', user.primer_apellido) }}" required>
+                        <span class="icon is-small is-left"><i class="fas fa-id-card"></i></span>
                     </div>
+                </div>
 
-                    <div class="field">
-                        <label class="label has-text-warning">Segundo Apellido</label>
-                        <div class="control">
-                            <input class="input is-rounded" type="text" name="segundo_apellido" value="{{ request.form.get('segundo_apellido', user.segundo_apellido) }}" required>
-                        </div>
+                <div class="field">
+                    <label class="label has-text-warning">Segundo Apellido</label>
+                    <div class="control has-icons-left">
+                        <input class="input is-rounded" type="text" name="segundo_apellido" value="{{ request.form.get('segundo_apellido', user.segundo_apellido) }}">
+                        <span class="icon is-small is-left"><i class="fas fa-id-card-alt"></i></span>
                     </div>
+                </div>
 
-                    <div class="field">
-                        <label class="label has-text-warning">Email</label>
-                        <div class="control">
-                            <input class="input is-rounded" type="email" name="email" value="{{ request.form.get('email', user.email) }}" required>
-                        </div>
+                <div class="field">
+                    <label class="label has-text-warning">Email</label>
+                    <div class="control has-icons-left">
+                        <input class="input is-rounded" type="email" name="email" value="{{ request.form.get('email', user.email) }}" required>
+                        <span class="icon is-small is-left"><i class="fas fa-envelope"></i></span>
                     </div>
+                </div>
 
-                    <div class="field">
-                        <label class="label has-text-warning">Teléfono</label>
-                        <div class="control">
-                            <input class="input is-rounded" type="text" name="telefono" value="{{ request.form.get('telefono', user.telefono) }}" required>
-                        </div>
+                <div class="field">
+                    <label class="label has-text-warning">Teléfono</label>
+                    <div class="control has-icons-left">
+                        <input class="input is-rounded" type="tel" name="telefono" value="{{ request.form.get('telefono', user.telefono) }}" maxlength="8" pattern="\d{8}" title="El teléfono debe contener 8 dígitos numéricos">
+                        <span class="icon is-small is-left"><i class="fas fa-phone"></i></span>
                     </div>
-                    
-                    <!-- Campo de Rol: Solo visible y editable si el usuario actual es Admin/Superuser -->
-                    {% if can_edit_role %}
-                    <div class="field">
-                        <label class="label has-text-danger">Rol de Usuario</label>
-                        <div class="control">
-                            <div class="select is-fullwidth is-rounded">
-                                <select name="rol" {% if user.rol == 'Superusuario' and not current_user.rol == 'Superusuario' %}disabled{% endif %}>
-                                    {% for role in roles %}
-                                        <option value="{{ role }}" {% if role == user.rol %}selected{% endif %}>
-                                            {{ role }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            {% if user.rol == 'Superusuario' and not current_user.rol == 'Superusuario' %}
-                                <p class="help is-danger">Solo un Superusuario puede cambiar el rol de otro Superusuario.</p>
-                            {% endif %}
+                </div>
+                
+                <!-- Campo de Rol: Solo visible y editable si el usuario actual es Admin/Superuser -->
+                {% if can_edit_role %}
+                <div class="field">
+                    <label class="label has-text-warning">Rol de Usuario</label>
+                    <div class="control has-icons-left">
+                        <div class="select is-fullwidth is-rounded">
+                            <select name="rol" {% if user.rol == 'Superusuario' and not current_user.rol == 'Superusuario' %}disabled{% endif %}>
+                                {% for role in roles %}
+                                    <option value="{{ role }}" {% if role == user.rol %}selected{% endif %}>
+                                        {{ role }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
+                        <span class="icon is-small is-left"><i class="fas fa-user-tag"></i></span>
+                        {% if user.rol == 'Superusuario' and not current_user.rol == 'Superusuario' %}
+                            <p class="help is-danger">Solo un Superusuario puede cambiar el rol de otro Superusuario.</p>
+                        {% endif %}
                     </div>
-                    {% endif %}
-
-                    <div class="field is-grouped is-grouped-centered mt-5">
-                        <div class="control">
-                            <button class="button is-primary is-rounded is-large" type="submit">
-                                <span class="icon"><i class="fas fa-save"></i></span>
-                                <span>Guardar Cambios</span>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-
-                {% if is_owner %}
-                <hr>
-                <div class="has-text-centered">
-                    <!-- Ahora apunta a la ruta 'cambiar_password' en app.py -->
-                    <a href="{{ url_for('cambiar_password') }}" class="button is-danger is-outlined is-rounded is-small">
-                        <span class="icon"><i class="fas fa-key"></i></span>
-                        <span>Cambiar Contraseña</span>
-                    </a>
                 </div>
                 {% endif %}
+
+                <div class="field is-grouped is-grouped-centered mt-5">
+                    <div class="control">
+                        <button class="button is-primary is-rounded is-large" type="submit">
+                            <span class="icon"><i class="fas fa-save"></i></span>
+                            <span>Guardar Cambios</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            {% if is_owner %}
+            <div class="has-text-centered mt-4">
+                <a href="{{ url_for('cambiar_password') }}" class="button is-danger is-outlined is-rounded">
+                    <span class="icon"><i class="fas fa-key"></i></span>
+                    <span>Cambiar Contraseña</span>
+                </a>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
