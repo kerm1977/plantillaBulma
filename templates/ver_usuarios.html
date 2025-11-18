@@ -43,10 +43,16 @@ margin-bottom: 0.25em !important;
 <p class="user-detail-p"><strong>Teléfono:</strong> <span class="user-phone">{{ user.telefono }}</span></p>
 <br>
 <div class="buttons is-centered is-flex is-flex-wrap-nowrap">
-<a href="{{ url_for('detalle_usuario', user_id=user.id) }}" class="button is-info is-rounded is-flex-grow-1 is-small">
+<a href="{{ url_for('detalle_usuario', user_id=user.id) }}" class="button is-info is-rounded is-small">
 <span class="icon"><i class="fas fa-eye"></i></span>
 <span>Ver más</span>
 </a>
+{% if current_user.rol == 'Superusuario' and user.id != current_user.id %}
+<button onclick="confirmDelete({{ user.id }}, '{{ user.nombre }} {{ user.primer_apellido }}'); return false;" class="button is-danger is-rounded is-small">
+<span class="icon"><i class="fas fa-trash"></i></span>
+<span>Eliminar</span>
+</button>
+{% endif %}
 </div>
 </div>
 </div>
@@ -78,6 +84,12 @@ margin-bottom: 0.25em !important;
 <span class="icon"><i class="fas fa-eye"></i></span>
 <span>Ver más</span>
 </a>
+{% if current_user.rol == 'Superusuario' and user.id != current_user.id %}
+<button onclick="confirmDelete({{ user.id }}, '{{ user.nombre }} {{ user.primer_apellido }}'); return false;" class="button is-danger is-light">
+<span class="icon"><i class="fas fa-trash"></i></span>
+<span>Eliminar</span>
+</button>
+{% endif %}
 </div>
 </td>
 </tr>
@@ -87,54 +99,87 @@ margin-bottom: 0.25em !important;
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-const searchInput = document.getElementById('search-input');
-const usersTable = document.getElementById('users-table');
-const userCards = document.querySelectorAll('.user-card-column');
-
-function filterUsers(searchTerm) {
-    const filterText = searchTerm.toLowerCase();
-
-    // Filtrar tarjetas
-    userCards.forEach(card =&gt; {
-        const cardContent = card.textContent.toLowerCase();
-        if (cardContent.includes(filterText)) {
-            card.style.display = &#39;block&#39;;
-        } else {
-            card.style.display = &#39;none&#39;;
-        }
-    });
-
-    // Filtrar filas de la tabla
-    const tableRows = usersTable.querySelectorAll(&#39;tbody tr&#39;);
-    tableRows.forEach(row =&gt; {
-        const rowContent = row.textContent.toLowerCase();
-        if (rowContent.includes(filterText)) {
-            row.style.display = &#39;&#39;;
-        } else {
-            row.style.display = &#39;none&#39;;
-        }
-    });
-}
-
-searchInput.addEventListener(&#39;input&#39;, (event) =&gt; {
-    filterUsers(event.target.value);
-});
-
-// Oculta la tabla en móviles y las tarjetas en desktop
-const mediaQuery = window.matchMedia(&#39;(max-width: 980px)&#39;);
-function handleMediaQuery(e) {
-    if (e.matches) {
-        usersTable.style.display = &#39;none&#39;;
-        document.getElementById(&#39;users-container&#39;).style.display = &#39;flex&#39;;
-    } else {
-        usersTable.style.display = &#39;table&#39;;
-        document.getElementById(&#39;users-container&#39;).style.display = &#39;none&#39;;
+function confirmDelete(userId, userName) {
+    if (confirm('¿Estás seguro de que deseas eliminar al usuario ' + userName + '?')) {
+        fetch('/usuarios/' + userId + '/eliminar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error al eliminar el usuario: ' + data.message);
+            }
+        })
+        .catch(function(error) {
+            console.error('Error:', error);
+            alert('Error al eliminar el usuario');
+        });
     }
 }
-mediaQuery.addListener(handleMediaQuery);
-handleMediaQuery(mediaQuery); // Llama a la función al cargar para la configuración inicial
 
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search-input');
+    const usersTable = document.getElementById('users-table');
+    const userCards = document.querySelectorAll('.user-card-column');
+    const mediaQuery = window.matchMedia('(max-width: 979px)');
+
+    function filterUsers(searchTerm) {
+        const filterText = searchTerm.toLowerCase();
+
+        // Filtrar tarjetas
+        userCards.forEach(function(card) {
+            const cardContent = card.textContent.toLowerCase();
+            if (cardContent.includes(filterText) || filterText === '') {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Filtrar tabla
+        if (usersTable) {
+            const rows = usersTable.getElementsByTagName('tr');
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                const rowContent = row.textContent.toLowerCase();
+                if (rowContent.includes(filterText) || filterText === '') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    function handleMediaQuery(mediaQuery) {
+        if (mediaQuery.matches) {
+            // Mobile view
+            if (usersTable) usersTable.style.display = 'none';
+            const container = document.getElementById('users-container');
+            if (container) container.style.display = 'flex';
+        } else {
+            // Desktop view
+            if (usersTable) usersTable.style.display = 'table';
+            const container = document.getElementById('users-container');
+            if (container) container.style.display = 'none';
+        }
+    }
+
+    // Event listeners
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            filterUsers(e.target.value);
+        });
+    }
+
+    // Initialize media query handler
+    mediaQuery.addListener(handleMediaQuery);
+    handleMediaQuery(mediaQuery);
 });
 </script>
 

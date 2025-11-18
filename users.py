@@ -129,32 +129,52 @@ def get_user_by_id(user_id, conn=None):
     """
     from app import get_db_connection
     
+    print(f"[DEBUG] Buscando usuario con ID: {user_id}")
+    
     # Si no se proporciona una conexión, crear una nueva
     close_conn = False
     if conn is None:
-        conn = get_db_connection()
-        close_conn = True
+        try:
+            conn = get_db_connection()
+            print("[DEBUG] Nueva conexión a la base de datos creada")
+            close_conn = True
+        except Exception as e:
+            print(f"[ERROR] No se pudo conectar a la base de datos: {str(e)}")
+            return None
     
     try:
         cursor = conn.cursor()
+        print("[DEBUG] Ejecutando consulta SQL...")
         cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
         user_data = cursor.fetchone()
         
         if user_data:
+            print("[DEBUG] Usuario encontrado en la base de datos")
             # Obtener los nombres de las columnas
             column_names = [column[0] for column in cursor.description]
+            print(f"[DEBUG] Columnas encontradas: {column_names}")
             # Convertir a diccionario
-            return dict(zip(column_names, user_data))
-        return None
+            user_dict = dict(zip(column_names, user_data))
+            print(f"[DEBUG] Datos del usuario: {user_dict}")
+            return user_dict
+        else:
+            print(f"[DEBUG] No se encontró el usuario con ID: {user_id}")
+            return None
         
     except Exception as e:
-        print(f"Error en get_user_by_id para ID {user_id}: {str(e)}")
+        print(f"[ERROR] Error en get_user_by_id para ID {user_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None
         
     finally:
         # Cerrar la conexión solo si la creamos aquí
         if close_conn and conn:
-            conn.close()
+            try:
+                conn.close()
+                print("[DEBUG] Conexión cerrada")
+            except:
+                pass
 
 
 def get_user_by_email(email, conn=None):

@@ -5,104 +5,373 @@
 {% block content %}
 <div class="container mt-6">
     <div class="columns is-centered">
-        <div class="column is-5">
-            <h1 class="title has-text-centered">
-                Editar Perfil de {% if is_owner %}Mi Cuenta{% else %}{{ user.usuario }}{% endif %}
-            </h1>
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="notification is-{{ category }} is-light is-rounded mb-4">
-                            <button class="delete"></button>
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            
-            <form method="POST">
-                <div class="field">
-                    <label class="label has-text-warning">Nombre</label>
-                    <div class="control has-icons-left">
-                        <input class="input is-rounded" type="text" name="nombre" value="{{ request.form.get('nombre', user.nombre) }}" required>
-                        <span class="icon is-small is-left"><i class="fas fa-user"></i></span>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label class="label has-text-warning">Primer Apellido</label>
-                    <div class="control has-icons-left">
-                        <input class="input is-rounded" type="text" name="primer_apellido" value="{{ request.form.get('primer_apellido', user.primer_apellido) }}" required>
-                        <span class="icon is-small is-left"><i class="fas fa-id-card"></i></span>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label class="label has-text-warning">Segundo Apellido</label>
-                    <div class="control has-icons-left">
-                        <input class="input is-rounded" type="text" name="segundo_apellido" value="{{ request.form.get('segundo_apellido', user.segundo_apellido) }}">
-                        <span class="icon is-small is-left"><i class="fas fa-id-card-alt"></i></span>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label class="label has-text-warning">Email</label>
-                    <div class="control has-icons-left">
-                        <input class="input is-rounded" type="email" name="email" value="{{ request.form.get('email', user.email) }}" required>
-                        <span class="icon is-small is-left"><i class="fas fa-envelope"></i></span>
-                    </div>
-                </div>
-
-                <div class="field">
-                    <label class="label has-text-warning">Teléfono</label>
-                    <div class="control has-icons-left">
-                        <input class="input is-rounded" type="tel" name="telefono" value="{{ request.form.get('telefono', user.telefono) }}" maxlength="8" pattern="\d{8}" title="El teléfono debe contener 8 dígitos numéricos">
-                        <span class="icon is-small is-left"><i class="fas fa-phone"></i></span>
-                    </div>
-                </div>
+        <div class="column is-8">
+            <div class="box">
+                <h1 class="title has-text-centered has-text-warning">
+                    <span class="icon"><i class="fas fa-user-edit"></i></span>
+                    <span>{% if is_owner %}Mi Perfil{% else %}Editar Usuario: {{ user.nombre }} {{ user.primer_apellido }}{% endif %}</span>
+                </h1>
                 
-                <!-- Campo de Rol: Solo visible y editable si el usuario actual es Admin/Superuser -->
-                {% if can_edit_role %}
-                <div class="field">
-                    <label class="label has-text-warning">Rol de Usuario</label>
-                    <div class="control has-icons-left">
-                        <div class="select is-fullwidth is-rounded">
-                            <select name="rol" {% if user.rol == 'Superusuario' and not current_user.rol == 'Superusuario' %}disabled{% endif %}>
-                                {% for role in roles %}
-                                    <option value="{{ role }}" {% if role == user.rol %}selected{% endif %}>
-                                        {{ role }}
-                                    </option>
-                                {% endfor %}
-                            </select>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="notification is-{{ category }} is-light is-rounded mb-4">
+                                <button class="delete"></button>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="columns">
+                        <!-- Columna izquierda: Información básica -->
+                        <div class="column is-6">
+                            <h2 class="subtitle has-text-warning">
+                                <span class="icon"><i class="fas fa-info-circle"></i></span>
+                                <span>Información Personal</span>
+                            </h2>
+                            
+                            <div class="field">
+                                <label class="label">Nombre de Usuario</label>
+                                <div class="control has-icons-left">
+                                    <input class="input is-rounded" type="text" value="{{ user.usuario }}" disabled>
+                                    <span class="icon is-small is-left"><i class="fas fa-at"></i></span>
+                                </div>
+                                <p class="help">El nombre de usuario no se puede modificar</p>
+                            </div>
+
+                            <div class="field">
+                                <label class="label">Nombre</label>
+                                <div class="control has-icons-left">
+                                    <input class="input is-rounded" type="text" name="nombre" value="{{ request.form.get('nombre', user.nombre) }}" 
+                                           pattern="^[A-Za-zÁÉÍÓÚáéíóúñÑ]{1,25}$" 
+                                           title="Solo letras (máx. 25 caracteres, sin espacios ni números)" 
+                                           oninput="validateName(this)" required>
+                                    <span class="icon is-small is-left"><i class="fas fa-user"></i></span>
+                                </div>
+                                <p class="help">Solo letras, máximo 25 caracteres</p>
+                            </div>
+
+                            <div class="field">
+                                <label class="label">Primer Apellido</label>
+                                <div class="control has-icons-left">
+                                    <input class="input is-rounded" type="text" name="primer_apellido" value="{{ request.form.get('primer_apellido', user.primer_apellido) }}" 
+                                           pattern="^[A-Za-zÁÉÍÓÚáéíóúñÑ]{1,25}$" 
+                                           title="Solo letras (máx. 25 caracteres, sin espacios ni números)"
+                                           oninput="validateName(this)" required>
+                                    <span class="icon is-small is-left"><i class="fas fa-id-card"></i></span>
+                                </div>
+                                <p class="help">Solo letras, máximo 25 caracteres</p>
+                            </div>
+
+                            <div class="field">
+                                <label class="label">Segundo Apellido</label>
+                                <div class="control has-icons-left">
+                                    <input class="input is-rounded" type="text" name="segundo_apellido" 
+                                           value="{{ request.form.get('segundo_apellido', user.segundo_apellido) }}"
+                                           pattern="^[A-Za-zÁÉÍÓÚáéíóúñÑ]{0,25}$" 
+                                           title="Solo letras (máx. 25 caracteres, sin espacios ni números)"
+                                           oninput="validateName(this)">
+                                    <span class="icon is-small is-left"><i class="fas fa-id-card-alt"></i></span>
+                                </div>
+                                <p class="help">Opcional, solo letras, máximo 25 caracteres</p>
+                            </div>
+
+                            <div class="field">
+                                <label class="label">Correo Electrónico</label>
+                                <div class="control has-icons-left">
+                                    <input class="input is-rounded" type="email" name="email" value="{{ request.form.get('email', user.email) }}" required>
+                                    <span class="icon is-small is-left"><i class="fas fa-envelope"></i></span>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label class="label">Teléfono</label>
+                                <div class="control has-icons-left">
+                                    <input class="input is-rounded" type="tel" name="telefono" 
+                                           value="{{ request.form.get('telefono', user.telefono) }}" 
+                                           pattern="^[0-9]{8}$" 
+                                           minlength="8"
+                                           maxlength="8"
+                                           title="Debe contener exactamente 8 dígitos numéricos"
+                                           oninput="validatePhone(this)"
+                                           required>
+                                    <span class="icon is-small is-left"><i class="fas fa-phone"></i></span>
+                                </div>
+                                <p class="help">Debe contener exactamente 8 dígitos numéricos</p>
+                                <p class="help is-danger" id="phoneError" style="display: none;">El teléfono debe tener exactamente 8 dígitos</p>
+                            </div>
                         </div>
-                        <span class="icon is-small is-left"><i class="fas fa-user-tag"></i></span>
-                        {% if user.rol == 'Superusuario' and not current_user.rol == 'Superusuario' %}
-                            <p class="help is-danger">Solo un Superusuario puede cambiar el rol de otro Superusuario.</p>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
 
-                <div class="field is-grouped is-grouped-centered mt-5">
-                    <div class="control">
-                        <button class="button is-primary is-rounded is-large" type="submit">
-                            <span class="icon"><i class="fas fa-save"></i></span>
-                            <span>Guardar Cambios</span>
-                        </button>
-                    </div>
-                </div>
-            </form>
+                        <!-- Columna derecha: Configuración de cuenta -->
+                        <div class="column is-6">
+                            <h2 class="subtitle has-text-warning">
+                                <span class="icon"><i class="fas fa-cog"></i></span>
+                                <span>Configuración de Cuenta</span>
+                            </h2>
 
-            {% if is_owner %}
-            <div class="has-text-centered mt-4">
-                <a href="{{ url_for('cambiar_password') }}" class="button is-danger is-outlined is-rounded">
+                            {% if current_user.rol == 'Superusuario' or (current_user.rol == 'Administrador' and user.rol not in ['Superusuario', 'Administrador']) %}
+                            <div class="field">
+                                <label class="label">Rol de Usuario</label>
+                                <div class="control has-icons-left">
+                                    <div class="select is-fullwidth is-rounded">
+                                        <select name="rol" {% if user.rol == 'Superusuario' and current_user.id != user.id and current_user.rol != 'Superusuario' %}disabled{% endif %}>
+                                            <option value="Usuario" {% if user.rol == 'Usuario' %}selected{% endif %}>Usuario Estándar</option>
+                                            <option value="Administrador" {% if user.rol == 'Administrador' %}selected{% endif %}>Administrador</option>
+                                            {% if current_user.rol == 'Superusuario' %}
+                                            <option value="Superusuario" {% if user.rol == 'Superusuario' %}selected{% endif %}>Superusuario</option>
+                                            {% endif %}
+                                        </select>
+                                    </div>
+                                    <span class="icon is-small is-left"><i class="fas fa-user-tag"></i></span>
+                                    {% if user.rol == 'Superusuario' and current_user.rol != 'Superusuario' %}
+                                        <p class="help is-danger">Solo un Superusuario puede modificar este rol.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="field">
+                                <label class="label">Estado de la Cuenta</label>
+                                <div class="control">
+                                    <label class="checkbox">
+                                        <input type="checkbox" name="activo" {% if user.activo or user.activo is none %}checked{% endif %} {% if not (current_user.rol in ['Administrador', 'Superusuario'] or current_user.id == user.id) %}disabled{% endif %}>
+                                        Cuenta Activa
+                                    </label>
+                                    <p class="help">Desmarcar para desactivar temporalmente esta cuenta</p>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label class="label">Foto de Perfil</label>
+                                <div class="file has-name is-boxed">
+                                    <label class="file-label">
+                                        <input class="file-input" type="file" name="foto_perfil" accept="image/*">
+                                        <span class="file-cta">
+                                            <span class="file-icon">
+                                                <i class="fas fa-upload"></i>
+                                            </span>
+                                            <span class="file-label">
+                                                Elegir archivo…
+                                            </span>
+                                        </span>
+                                        <span class="file-name">
+                                            {% if user.foto_perfil %}
+                                                {{ user.foto_perfil }}
+                                            {% else %}
+                                                Sin archivo seleccionado
+                                            {% endif %}
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label class="label">Biografía</label>
+                                <div class="control">
+                                    <textarea class="textarea is-rounded" name="biografia" placeholder="Cuéntanos algo sobre ti...">{{ request.form.get('biografia', user.biografia or '') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-5">
+
+                    <div class="field is-grouped is-grouped-centered">
+                        <div class="control">
+                            <a href="{{ url_for('perfil') if is_owner else url_for('usuarios') }}" class="button is-light is-rounded">
+                                <span class="icon"><i class="fas fa-arrow-left"></i></span>
+                                <span>Cancelar</span>
+                            </a>
+                        </div>
+                        <div class="control">
+                            <button type="submit" class="button is-primary is-rounded">
+                                <span class="icon"><i class="fas fa-save"></i></span>
+                                <span>Guardar Cambios</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Sección para cambiar contraseña -->
+            {% if is_owner or current_user.rol in ['Administrador', 'Superusuario'] %}
+            <div class="box mt-5">
+                <h2 class="subtitle has-text-warning">
                     <span class="icon"><i class="fas fa-key"></i></span>
-                    <span>Cambiar Contraseña</span>
-                </a>
+                    <span>Seguridad</span>
+                </h2>
+                
+                <div class="buttons is-centered">
+                    <a href="{{ url_for('cambiar_password', user_id=user.id if not is_owner else none) }}" class="button is-danger is-outlined is-rounded">
+                        <span class="icon"><i class="fas fa-key"></i></span>
+                        <span>Cambiar Contraseña</span>
+                    </a>
+                    
+                    {% if not is_owner and current_user.rol == 'Superusuario' %}
+                    <button type="button" class="button is-warning is-outlined is-rounded" id="forcePasswordReset">
+                        <span class="icon"><i class="fas fa-sync-alt"></i></span>
+                        <span>Forzar cambio de contraseña</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if not is_owner and current_user.rol == 'Superusuario' %}
+            <div class="box mt-5 has-background-danger-light">
+                <h2 class="subtitle has-text-danger">
+                    <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+                    <span>Zona de Peligro</span>
+                </h2>
+                
+                <div class="buttons is-centered">
+                    <button type="button" class="button is-danger is-outlined is-rounded" id="deleteUserBtn" data-user-id="{{ user.id }}">
+                        <span class="icon"><i class="fas fa-trash"></i></span>
+                        <span>Eliminar Usuario</span>
+                    </button>
+                </div>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Modal de confirmación para eliminar usuario -->
+<div class="modal" id="deleteUserModal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Confirmar Eliminación</p>
+            <button class="delete" aria-label="close" id="closeDeleteModal"></button>
+        </header>
+        <section class="modal-card-body">
+            <p>¿Estás seguro de que deseas eliminar permanentemente este usuario?</p>
+            <p class="has-text-danger has-text-weight-bold">¡Esta acción no se puede deshacer!</p>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-danger" id="confirmDeleteBtn">Sí, eliminar</button>
+            <button class="button" id="cancelDeleteBtn">Cancelar</button>
+        </footer>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Manejo del input de archivo para mostrar el nombre del archivo seleccionado
+    const fileInput = document.querySelector('.file-input');
+    if (fileInput) {
+        fileInput.onchange = () => {
+            if (fileInput.files.length > 0) {
+                const fileName = document.querySelector('.file-name');
+                fileName.textContent = fileInput.files[0].name;
+            }
+        };
+    }
+
+    // Validación de campos de nombre y apellidos
+    function validateName(input) {
+        // Eliminar espacios y números
+        input.value = input.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúñÑ]/g, '');
+        // Limitar a 25 caracteres
+        if (input.value.length > 25) {
+            input.value = input.value.slice(0, 25);
+        }
+    }
+
+    // Validación de teléfono
+    function validatePhone(input) {
+        // Solo permitir números
+        input.value = input.value.replace(/[^0-9]/g, '');
+        // Limitar a 8 caracteres
+        if (input.value.length > 8) {
+            input.value = input.value.slice(0, 8);
+        }
+        
+        // Mostrar/ocultar mensaje de error
+        const errorElement = document.getElementById('phoneError');
+        if (input.value.length > 0 && input.value.length !== 8) {
+            input.classList.add('is-danger');
+            errorElement.style.display = 'block';
+        } else {
+            input.classList.remove('is-danger');
+            errorElement.style.display = 'none';
+        }
+    }
+    
+    // Validación del formulario antes de enviar
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const phoneInput = document.querySelector('input[name="telefono"]');
+        if (phoneInput.value.length !== 8) {
+            e.preventDefault();
+            phoneInput.classList.add('is-danger');
+            document.getElementById('phoneError').style.display = 'block';
+            phoneInput.focus();
+        }
+    });
+
+    // Manejo del modal de eliminación
+    const deleteModal = document.getElementById('deleteUserModal');
+    const deleteBtn = document.getElementById('deleteUserBtn');
+    const closeModal = document.getElementById('closeDeleteModal');
+    const cancelDelete = document.getElementById('cancelDeleteBtn');
+    const confirmDelete = document.getElementById('confirmDeleteBtn');
+
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => {
+            deleteModal.classList.add('is-active');
+        });
+    }
+
+    [closeModal, cancelDelete].forEach(el => {
+        if (el) {
+            el.addEventListener('click', () => {
+                deleteModal.classList.remove('is-active');
+            });
+        }
+    });
+
+    if (confirmDelete) {
+        confirmDelete.addEventListener('click', () => {
+            const userId = deleteBtn.getAttribute('data-user-id');
+            fetch(`/usuarios/${userId}/eliminar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = "{{ url_for('usuarios') }}";
+                } else {
+                    alert('Error al eliminar el usuario: ' + data.message);
+                    deleteModal.classList.remove('is-active');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al intentar eliminar el usuario');
+                deleteModal.classList.remove('is-active');
+            });
+        });
+    }
+
+    // Forzar cambio de contraseña
+    const forcePasswordResetBtn = document.getElementById('forcePasswordReset');
+    if (forcePasswordResetBtn) {
+        forcePasswordResetBtn.addEventListener('click', () => {
+            if (confirm('¿Forzar a este usuario a cambiar su contraseña en el próximo inicio de sesión?')) {
+                // Aquí iría la lógica para forzar el cambio de contraseña
+                alert('Función de forzar cambio de contraseña se ejecutará aquí');
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

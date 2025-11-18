@@ -1,7 +1,7 @@
 # Importaciones necesarias para la aplicación Flask
 import os
 import sqlite3
-from flask import Flask, render_template, request, redirect, url_for, flash, g, session
+from flask import Flask, render_template, request, redirect, url_for, flash, g, session, jsonify
 from flask_bcrypt import Bcrypt
 import sqlite3
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -93,7 +93,9 @@ def load_user(user_id):
     
     try:
         # Usar la función get_user_by_id del módulo users
-        user_dict = user_module.get_user_by_id(user_id)
+        conn = get_db_connection()
+        user_dict = user_module.get_user_by_id(user_id, conn)
+        conn.close()
         
         if not user_dict:
             print(f"No se encontró el usuario con ID: {user_id}")
@@ -520,14 +522,27 @@ def editar_usuario(user_id):
     Solo el dueño del perfil o un Admin/Superusuario puede editar.
     """
     conn = get_db_connection()
-    user_data = user_module.get_user_by_id(conn, user_id)
+    user_data = user_module.get_user_by_id(user_id, conn)
     conn.close()
 
     if not user_data:
         flash('Usuario no encontrado.', 'danger')
         return redirect(url_for('usuarios'))
-
-    user_to_edit = User(**user_data)
+    
+    # Create a new dictionary with only the fields that the User class expects
+    user_kwargs = {
+        'id': user_data.get('id'),
+        'usuario': user_data.get('usuario', ''),
+        'nombre': user_data.get('nombre', ''),
+        'primer_apellido': user_data.get('primer_apellido', ''),
+        'segundo_apellido': user_data.get('segundo_apellido', ''),
+        'email': user_data.get('email', ''),
+        'telefono': user_data.get('telefono', ''),
+        'rol': user_data.get('rol', 'Usuario Estándar'),
+        'password_hash': user_data.get('password_hash')
+    }
+    
+    user_to_edit = User(**user_kwargs)
     is_owner = current_user.id == user_to_edit.id
     is_authorized = is_owner or current_user.rol in ['Administrador', 'Superusuario']
 
@@ -550,9 +565,24 @@ def editar_usuario(user_id):
         # Si el usuario es Superusuario y está editando a otro Superusuario, 
         # y no es el dueño, se le bloquea el cambio de rol
         if user_to_edit.rol == 'Superusuario' and user_to_edit.id != current_user.id and current_user.rol != 'Superusuario':
-            data['rol'] = user_to_edit.rol # Mantener el rol original
+            data['rol'] = user_to_edit.rol  # Mantener el rol original
 
-        is_updated, message = user_module.update_user_profile(user_id, data)
+        # Asegurarse de que todos los campos requeridos estén presentes
+        required_fields = ['nombre', 'primer_apellido', 'segundo_apellido', 'email', 'telefono']
+        for field in required_fields:
+            if field not in data:
+                data[field] = getattr(user_to_edit, field, '')
+
+        # Llamar a la función de actualización con los parámetros correctos
+        is_updated, message = user_module.update_user(
+            user_id=user_id,
+            nombre=data['nombre'],
+            primer_apellido=data['primer_apellido'],
+            segundo_apellido=data.get('segundo_apellido', ''),
+            email=data['email'],
+            telefono=data['telefono'],
+            rol=data.get('rol', user_to_edit.rol)
+        )
 
         if is_updated:
             # Si el usuario se edita a sí mismo, debe recargarse el objeto current_user en la sesión
@@ -575,21 +605,41 @@ def detalle_usuario(user_id):
     Solo Admin/Superusuario o el dueño del perfil pueden ver los detalles.
     """
     conn = get_db_connection()
-    user_data = user_module.get_user_by_id(conn, user_id)
+    user_data = user_module.get_user_by_id(user_id, conn)
     conn.close()
 
     if not user_data:
         flash('Usuario no encontrado.', 'danger')
         return redirect(url_for('usuarios'))
+    
+    try:
+        # Crear el objeto User con los parámetros en el orden correcto
+        user_detail = User(
+            id=user_data.get('id'),
+            usuario=user_data.get('usuario', ''),
+            nombre=user_data.get('nombre', ''),
+            primer_apellido=user_data.get('primer_apellido', ''),
+            segundo_apellido=user_data.get('segundo_apellido', ''),
+            email=user_data.get('email', ''),
+            telefono=user_data.get('telefono', ''),
+            rol=user_data.get('rol', 'Usuario'),
+            password_hash=user_data.get('password_hash')
+        )
+        
+        is_authorized = current_user.id == user_detail.id or current_user.rol in ['Administrador', 'Superusuario']
 
-    user_detail = User(**user_data)
-    is_authorized = current_user.id == user_detail.id or current_user.rol in ['Administrador', 'Superusuario']
+        if not is_authorized:
+            flash('Acceso denegado: No tienes permiso para ver este perfil.', 'danger')
+            return redirect(url_for('dashboard'))
 
-    if not is_authorized:
-        flash('Acceso denegado: No tienes permiso para ver este perfil.', 'danger')
-        return redirect(url_for('dashboard'))
-
-    return render_template('detalle_usuarios.html', user=user_detail)
+        return render_template('detalle_usuarios.html', user=user_detail)
+        
+    except Exception as e:
+        print(f"Error al cargar el detalle del usuario {user_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash('Error al cargar los datos del usuario.', 'danger')
+        return redirect(url_for('usuarios'))
 
 @app.route('/usuarios/<int:user_id>/eliminar', methods=['POST'])
 @login_required
@@ -598,15 +648,25 @@ def eliminar_usuario(user_id):
     Ruta para eliminar un usuario (solo Superusuario).
     """
     if current_user.rol != 'Superusuario':
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'Acceso denegado: Solo un Superusuario puede eliminar usuarios.'}), 403
         flash('Acceso denegado: Solo un Superusuario puede eliminar usuarios.', 'danger')
         return redirect(url_for('dashboard'))
 
     if user_id == current_user.id:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'message': 'No puedes eliminar tu propia cuenta mientras estás logueado.'}), 400
         flash('No puedes eliminar tu propia cuenta mientras estás logueado.', 'danger')
         return redirect(url_for('usuarios'))
 
     is_deleted, message = user_module.delete_user(user_id)
 
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if is_deleted:
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'message': message}), 400
+    
     if is_deleted:
         flash(message, 'success')
     else:
