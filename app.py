@@ -146,10 +146,10 @@ def create_tables():
 def index():
     """
     Ruta principal (Home).
+    Muestra la página de inicio.
     """
-    # Si el usuario está autenticado, redirige a 'dashboard', sino a 'login'.
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return render_template('home.html')
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -158,7 +158,7 @@ def login():
     Ruta para el inicio de sesión.
     """
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('index'))
 
     if request.method == 'POST':
         email = request.form.get('email')
@@ -262,7 +262,7 @@ def login():
                         print(f"Usuario autenticado: {current_user.is_authenticated}")
                         
                         flash('¡Bienvenido Superusuario!', 'success')
-                        next_page = request.args.get('next') or url_for('dashboard')
+                        next_page = request.args.get('next') or url_for('index')
                         print(f"Redirigiendo a: {next_page}")
                         return redirect(next_page)
                         
@@ -328,7 +328,7 @@ def login():
                                 if current_user.is_authenticated:
                                     flash('Inicio de sesión exitoso.', 'success')
                                     next_page = request.args.get('next')
-                                    return redirect(next_page or url_for('dashboard'))
+                                    return redirect(next_page or url_for('index'))
                                 else:
                                     flash('Error al iniciar sesión. Por favor, intente nuevamente.', 'danger')
                                     return render_template('login.html')
@@ -369,6 +369,16 @@ def logout():
 def dashboard():
     """
     Ruta del panel de control.
+    Redirige a la página de inicio.
+    """
+    return redirect(url_for('index'))
+
+# Mantener la función original con un nombre diferente para compatibilidad
+@app.route('/admin/dashboard')
+@login_required
+def admin_dashboard():
+    """
+    Ruta del panel de control administrativo.
     """
     # Obtener estadísticas de usuarios
     conn = get_db_connection()
