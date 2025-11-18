@@ -12,10 +12,10 @@ TODO DEBE ESTAR EN UN ARCHIVO POR APARTE Y LINKEADO A  BASE.HTML-->
                 <h1 class="title has-text-centered ">Iniciar Sesión</h1>
                 <form method="POST" action="{{ url_for('login') }}">
                     <div class="field">
-                        <label class="label has-text-warning">Usuario, Email o Teléfono</label>
+                        <label class="label has-text-warning">Correo Electrónico</label>
                         <div class="control has-icons-left">
-                            <input class="input is-rounded" type="text" name="username_or_email_or_phone" required>
-                            <span class="icon is-small is-left"><i class="fas fa-user"></i></span>
+                            <input class="input is-rounded" type="email" name="email" required>
+                            <span class="icon is-small is-left"><i class="fas fa-envelope"></i></span>
                         </div>
                     </div>
 
@@ -51,7 +51,7 @@ TODO DEBE ESTAR EN UN ARCHIVO POR APARTE Y LINKEADO A  BASE.HTML-->
 
                 <div class="has-text-centered mt-5">
                     <a href="#" style="color: #ff9cee;"><p class="mb-2">¿Olvidaste tu contraseña?</a></p>
-                    <a href="{{ url_for('register') }}" style="color: #85e3ff;"><p>Ya tengo una cuenta</a></p>
+                    <a href="{{ url_for('registro') }}" style="color: #85e3ff;"><p>No tengo una cuenta</p></a>
                 </div>
             </div>
         </div>

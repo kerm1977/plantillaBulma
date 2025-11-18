@@ -4,9 +4,9 @@ TODO DEBE ESTAR EN EL NAVBAR.JS Y BASE.CSS
 
 <nav class="navbar is-warning" role="navigation" aria-label="main navigation">
 <div class="navbar-brand is-flex is-justify-content-center">
-<a class="navbar-item" href="{{ url_for('home') }}">
+<a class="navbar-item" href="{{ url_for('dashboard') }}">
 <!-- Puedes reemplazar este texto con un logo si lo deseas -->
-<img src="{{ url_for('static', filename='img/logo.png') }}" alt="Transavi CR Logo" style="max-height: 32px; width: auto;" class="is-rounded navbar-logo">
+<img src="{{ url_for('static', filename='img/logo.png') }}" alt="Transavi CR Logo" style="max-height: 32px; width: auto;\" class="is-rounded navbar-logo">
 <span class="is-hidden-desktop has-text-weight-bold is-size-4">Transavi C.R.</span>
 </a>
 
@@ -22,7 +22,7 @@ TODO DEBE ESTAR EN EL NAVBAR.JS Y BASE.CSS
 <div id="navbarBasicExample" class="navbar-menu">
 <div class="navbar-start">
 {% if current_user.is_authenticated %}
-<a class="navbar-item" href="{{ url_for('home') }}">
+<a class="navbar-item" href="{{ url_for('dashboard') }}">
 <span class="icon"><i class="fas fa-home"></i></span>
 <span>Inicio</span>
 </a>
@@ -41,7 +41,7 @@ TODO DEBE ESTAR EN EL NAVBAR.JS Y BASE.CSS
 <span class="icon"><i class="fas fa-sign-in-alt"></i></span>
 <span>Login</span>
 </a>
-<a class="navbar-item" href="{{ url_for('register') }}">
+<a class="navbar-item" href="{{ url_for('registro') }}">
 <span class="icon"><i class="fas fa-user-plus"></i></span>
 <span>Registrar</span>
 </a>
@@ -63,13 +63,11 @@ TODO DEBE ESTAR EN EL NAVBAR.JS Y BASE.CSS
                 <span class="icon">
                     <i class="fas fa-sign-out-alt"></i>
                 </span>
-                <span>Cerrar Sesión</span>
+                <span>Cerrar Sesión ({{ current_user.usuario }})</span>
             </a>
             {% endif %}
         </div>
     </div>
 </div>
-
 </div>
-
 </nav>

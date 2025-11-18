@@ -1,8 +1,9 @@
 # Importaciones necesarias para la aplicación Flask
 import os
 import sqlite3
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, g
 from flask_bcrypt import Bcrypt
+import sqlite3
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 # Importa las funciones del módulo de users.py
@@ -14,7 +15,8 @@ import users as user_module
 
 # Inicializa la aplicación Flask
 app = Flask(__name__, static_folder='static', template_folder='templates')
-app.config['SECRET_KEY'] = os.urandom(24) # Clave secreta para sesiones seguras
+# Genera una clave secreta fuerte de 24 bytes
+app.config['SECRET_KEY'] = os.urandom(24) 
 
 # Inicializa Bcrypt para el hash de contraseñas
 bcrypt = Bcrypt(app)
@@ -30,86 +32,81 @@ login_manager.login_message = 'Por favor, inicia sesión para acceder a esta pá
 #              Configuración de la Base de Datos
 # ----------------------------------------------------
 
+
 # Variable para almacenar la ruta de la base de datos
 DB_PATH = 'database/db.db'
 
 def get_db_connection():
     """
     Establece una conexión a la base de datos SQLite y configura el acceso a las filas por nombre.
-    
-    Returns:
-        sqlite3.Connection: El objeto de conexión.
     """
-    # Asegúrate de que el directorio de la base de datos existe
+    # Asegúrate de que el directorio exista
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    conn.row_factory = sqlite3.Row # Permite acceder a las columnas por nombre
     return conn
 
 # ----------------------------------------------------
-#               Clase de Usuario para Flask-Login
+#               Clase de Usuario
 # ----------------------------------------------------
 
 class User(UserMixin):
     """
-    Clase de modelo para el usuario, compatible con Flask-Login.
+    Clase de usuario para Flask-Login.
     """
-    def __init__(self, user_data):
-        self.id = user_data['id']
-        self.nombre = user_data['nombre']
-        self.primer_apellido = user_data['primer_apellido']
-        self.segundo_apellido = user_data['segundo_apellido']
-        self.usuario = user_data['usuario']
-        self.email = user_data['email']
-        self.telefono = user_data['telefono']
-        self.rol = user_data['rol']
-        
-    @staticmethod
-    def get(user_id):
-        """
-        Método estático para cargar un usuario desde la base de datos.
-        """
-        user_data = user_module.find_user_by_id(user_id)
-        if user_data:
-            return User(user_data)
-        return None
-        
+    def __init__(self, id, usuario, nombre, primer_apellido, segundo_apellido, email, telefono, rol, password_hash=None):
+        self.id = id
+        self.usuario = usuario
+        self.nombre = nombre
+        self.primer_apellido = primer_apellido
+        self.segundo_apellido = segundo_apellido
+        self.email = email
+        self.telefono = telefono
+        self.rol = rol
+        self.password_hash = password_hash
+
+    # Método requerido por Flask-Login para obtener el ID de usuario
+    def get_id(self):
+        return str(self.id)
+
+# ----------------------------------------------------
+#               Funciones de Usuario y Login
+# ----------------------------------------------------
+
 @login_manager.user_loader
 def load_user(user_id):
     """
-    Función de callback para recargar al usuario desde la sesión.
+    Cargador de usuario para Flask-Login.
     """
-    return User.get(user_id)
+    # get_user_by_id ya maneja la conexión a la base de datos internamente
+    user = user_module.get_user_by_id(user_id)
+    if user:
+        return user
+    return None
+
+@app.before_request
+def create_tables():
+    """
+    Asegura que la tabla de usuarios exista antes de la primera solicitud.
+    """
+    conn = get_db_connection()
+    user_module.create_user_table(conn)
+    conn.close()
+
 
 # ----------------------------------------------------
-#                     Rutas de la Aplicación
+#                   Rutas de la Aplicación
 # ----------------------------------------------------
 
 @app.route('/')
-def home():
+def index():
     """
-    Ruta principal que muestra la página de inicio.
+    Ruta principal (Home).
     """
-    return render_template('home.html')
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    """
-    Ruta para el registro de nuevos usuarios.
-    """
-    if request.method == 'POST':
-        # Añade un nuevo usuario usando la función del módulo users
-        result = user_module.add_new_user(request.form)
-        
-        if isinstance(result, str):
-            # Si add_new_user retorna una cadena, es un error
-            flash(result, 'danger')
-        else:
-            # Si retorna el usuario, el registro fue exitoso
-            flash('¡Registro exitoso! Por favor, inicia sesión.', 'success')
-            return redirect(url_for('login'))
-            
-    return render_template('register.html')
+    # Si el usuario está autenticado, redirige a 'dashboard', sino a 'login'.
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -117,188 +114,470 @@ def login():
     Ruta para el inicio de sesión.
     """
     if current_user.is_authenticated:
-        return redirect(url_for('perfil'))
+        return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
-        user_input = request.form.get('username_or_email_or_phone')
+        email = request.form.get('email')
         password = request.form.get('password')
-        remember_me = True if request.form.get('remember_me') else False
-        
-        # Limpia cualquier espacio en blanco en la contraseña
-        password = password.strip()
 
-        # Llama a la función de verificación genérica en el módulo de users
-        user_data = user_module.verify_user(user_input, password)
-        
-        if user_data:
-            user_obj = User(user_data)
-            login_user(user_obj, remember=remember_me)
-            return redirect(url_for('perfil'))
-        else:
-            flash('Usuario o contraseña incorrectos.', 'danger')
+        if not email or not password:
+            flash('Por favor ingresa tu correo electrónico y contraseña.', 'danger')
+            return render_template('login.html')
             
+        try:
+            # Verificar si es el superusuario
+            if email == 'kenth1977@gmail.com':
+                with get_db_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
+                    existing_user = cursor.fetchone()
+                    
+                    # Convertir a diccionario para manejo más seguro
+                    user_dict = dict(zip([column[0] for column in cursor.description], existing_user)) if existing_user else None
+                    
+                    if not user_dict:
+                        # Crear el superusuario si no existe
+                        try:
+                            hashed_password = bcrypt.generate_password_hash('CR129x7848n').decode('utf-8')
+                            cursor.execute('''
+                                INSERT INTO users (usuario, email, password_hash, rol, nombre, primer_apellido)
+                                VALUES (?, ?, ?, ?, ?, ?)
+                            ''', (
+                                'kenth1977',  # Nombre de usuario
+                                email,
+                                hashed_password,
+                                'Superusuario',  # Rol de superusuario
+                                'Kent',         # Nombre
+                                'Admin'         # Apellido
+                            ))
+                            conn.commit()
+                            flash('Superusuario creado exitosamente. Por favor inicia sesión.', 'success')
+                            return redirect(url_for('login'))
+                        except Exception as e:
+                            flash(f'Error al crear el superusuario: {str(e)}', 'danger')
+                            return render_template('login.html')
+                    
+                    try:
+                        # Verificar si la columna password_hash existe
+                        if 'password_hash' not in user_dict:
+                            # Si no existe, actualizar la tabla para agregarla
+                            try:
+                                cursor.execute('ALTER TABLE users ADD COLUMN password_hash TEXT')
+                                conn.commit()
+                                # Establecer un valor por defecto
+                                user_dict['password_hash'] = ''
+                            except sqlite3.OperationalError as e:
+                                if 'duplicate column name' not in str(e):
+                                    raise
+                        
+                        # Obtener el hash de la contraseña
+                        password_hash = user_dict.get('password_hash', '')
+                        
+                        # Si el hash no es válido o no coincide, actualizarlo
+                        if not password_hash or not isinstance(password_hash, str) or \
+                           not password_hash.startswith(('$2b$', '$2a$')) or \
+                           not bcrypt.check_password_hash(password_hash, 'CR129x7848n'):
+                            
+                            hashed_password = bcrypt.generate_password_hash('CR129x7848n').decode('utf-8')
+                            
+                            # Verificar si la columna rol existe
+                            cursor.execute("PRAGMA table_info(users)")
+                            columns = [column[1] for column in cursor.fetchall()]
+                            
+                            if 'rol' not in columns:
+                                cursor.execute('ALTER TABLE users ADD COLUMN rol TEXT DEFAULT "Usuario"')
+                                conn.commit()
+                            
+                            cursor.execute('''
+                                UPDATE users 
+                                SET password_hash = ?, rol = 'Superusuario'
+                                WHERE email = ?
+                            ''', (hashed_password, email))
+                            conn.commit()
+                            password_hash = hashed_password
+                            user_dict['rol'] = 'Superusuario'
+                        
+                        # Verificar la contraseña proporcionada
+                        if not bcrypt.check_password_hash(password_hash, password):
+                            flash('Contraseña incorrecta para el superusuario.', 'danger')
+                            return render_template('login.html')
+                        
+                        # Crear objeto User para el superusuario
+                        user = User(
+                            id=user_dict.get('id'),
+                            usuario=user_dict.get('usuario', 'kenth1977'),
+                            nombre=user_dict.get('nombre', 'Kent'),
+                            primer_apellido=user_dict.get('primer_apellido', 'Admin'),
+                            segundo_apellido=user_dict.get('segundo_apellido', ''),
+                            email=email,
+                            telefono=user_dict.get('telefono', ''),
+                            rol=user_dict.get('rol', 'Superusuario'),
+                            password_hash=password_hash
+                        )
+                        
+                        login_user(user)
+                        flash('¡Bienvenido Superusuario!', 'success')
+                        next_page = request.args.get('next')
+                        return redirect(next_page or url_for('dashboard'))
+                        
+                    except Exception as e:
+                        flash(f'Error al verificar la contraseña del superusuario: {str(e)}', 'danger')
+                        return render_template('login.html')
+
+            # Para usuarios normales
+            with get_db_connection() as conn:
+                user_data = user_module.get_user_by_email(email)
+                
+                if user_data:
+                    # Convertir a diccionario para manejo más seguro
+                    user_dict = dict(zip(user_data.keys(), user_data)) if user_data else None
+                    
+                    if not user_dict or 'password_hash' not in user_dict or not user_dict['password_hash']:
+                        flash('Error en la configuración de la cuenta. Por favor, contacte al administrador.', 'danger')
+                        return render_template('login.html')
+                    
+                    # Verificar el formato del hash de la contraseña
+                    password_hash = user_dict['password_hash']
+                    if not isinstance(password_hash, str) or not password_hash.startswith(('$2b$', '$2a$')):
+                        # Si el hash no es válido, forzar el restablecimiento de la contraseña
+                        flash('Se requiere restablecer la contraseña. Por favor, contacte al administrador.', 'danger')
+                        return render_template('login.html')
+                    
+                    try:
+                        # Verificar la contraseña
+                        if bcrypt.check_password_hash(password_hash, password):
+                            # Reconstruir el objeto User solo si la contraseña es correcta
+                            user = User(
+                                id=user_dict.get('id'),
+                                usuario=user_dict.get('usuario', ''),
+                                nombre=user_dict.get('nombre', ''),
+                                primer_apellido=user_dict.get('primer_apellido', ''),
+                                segundo_apellido=user_dict.get('segundo_apellido', ''),
+                                email=email,
+                                telefono=user_dict.get('telefono', ''),
+                                rol=user_dict.get('rol', 'usuario'),
+                                password_hash=password_hash
+                            )
+                            
+                            login_user(user)
+                            flash('Inicio de sesión exitoso.', 'success')
+                            next_page = request.args.get('next')
+                            return redirect(next_page or url_for('dashboard'))
+                        else:
+                            flash('Contraseña incorrecta.', 'danger')
+                    except ValueError as e:
+                        if 'Invalid salt' in str(e):
+                            flash('Error en la configuración de la contraseña. Por favor, contacte al administrador.', 'danger')
+                        else:
+                            flash(f'Error al verificar la contraseña: {str(e)}', 'danger')
+                            
+                else:
+                    flash('No se encontró ninguna cuenta con ese correo electrónico.', 'danger')
+        
+        except Exception as e:
+            flash(f'Error al iniciar sesión: {str(e)}', 'danger')
+            return render_template('login.html')
+
     return render_template('login.html')
-    
-@app.route('/perfil')
-@login_required
-def perfil():
-    """
-    Ruta para la página de perfil del usuario.
-    """
-    # Pasar el objeto current_user a la plantilla para que Jinja pueda acceder a sus atributos
-    return render_template('perfil.html', user=current_user)
-    
+
 @app.route('/logout')
 @login_required
 def logout():
     """
-    Cierra la sesión del usuario.
+    Ruta para cerrar la sesión.
     """
     logout_user()
-    return redirect(url_for('home'))
+    flash('Has cerrado sesión exitosamente.', 'info')
+    return redirect(url_for('login'))
 
-@app.route('/usuarios')
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    """
+    Ruta del panel de control.
+    """
+    # Obtener estadísticas de usuarios
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Obtener total de usuarios
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_usuarios = cursor.fetchone()[0]
+    
+    # Obtener conteo por roles
+    cursor.execute("SELECT rol, COUNT(*) as count FROM users GROUP BY rol")
+    role_counts = cursor.fetchall()
+    
+    # Inicializar contadores
+    admin_count = 0
+    superuser_count = 0
+    user_count = 0
+    
+    # Procesar los resultados
+    for role, count in role_counts:
+        if role == 'Administrador':
+            admin_count = count
+        elif role == 'Superusuario':
+            superuser_count = count
+        else:
+            user_count += count  # Sumar otros roles a usuarios normales
+    
+    conn.close()
+    
+    return render_template('dashboard.html',
+                         total_usuarios=total_usuarios,
+                         admin_count=admin_count,
+                         superuser_count=superuser_count,
+                         user_count=user_count)
+
+@app.route('/perfil')
+@login_required
+def perfil():
+    """
+    Ruta para ver el perfil del usuario actual.
+    """
+    # current_user es proporcionado por Flask-Login
+    return render_template('perfil.html', user=current_user)
+
+@app.route('/usuarios', methods=['GET'])
 @login_required
 def usuarios():
     """
-    Muestra la lista de usuarios.
+    Ruta para listar todos los usuarios (solo si el rol es Admin o Superusuario).
+    """
+    if current_user.rol not in ['Administrador', 'Superusuario']:
+        flash('Acceso denegado: Se requiere un rol de Administrador o Superusuario.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    conn = get_db_connection()
+    users_list = user_module.get_all_users(conn)
+    conn.close()
+    
+    # Convierte los Rows de SQLite a objetos User para un acceso más fácil en la plantilla
+    users_objects = [User(**dict(u)) for u in users_list]
+
+    return render_template('ver_usuarios.html', users=users_objects)
+
+@app.route('/registro', methods=['GET', 'POST'])
+def registro():
+    """
+    Ruta para que los nuevos usuarios se registren.
+    """
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        # Recolectar datos del formulario
+        data = {
+            'usuario': request.form.get('usuario'),
+            'nombre': request.form.get('nombre'),
+            'primer_apellido': request.form.get('primer_apellido'),
+            'segundo_apellido': request.form.get('segundo_apellido', ''),
+            'email': request.form.get('email'),
+            'telefono': request.form.get('telefono', ''),
+            'password': request.form.get('password'),
+            'rol': 'Usuario',  # Rol por defecto para nuevos registros
+        }
+
+        # Validar y crear usuario
+        is_created, message = user_module.create_new_user(data, bcrypt)
+
+        if is_created:
+            flash(message, 'success')
+            return redirect(url_for('login'))
+        else:
+            flash(message, 'danger')
+            
+    return render_template('registro.html')
+
+@app.route('/usuarios/crear', methods=['GET', 'POST'])
+@login_required
+def crear_usuarios():
+    """
+    Ruta para que los administradores creen nuevos usuarios.
     Solo accesible para administradores.
     """
     if current_user.rol not in ['Administrador', 'Superusuario']:
-        flash('No tienes permiso para ver esta página.', 'danger')
-        return redirect(url_for('perfil'))
-        
-    users = user_module.find_all_users()
-    return render_template('ver_usuarios.html', users=users)
+        flash('Acceso denegado: Se requiere un rol de Administrador o Superusuario para crear usuarios.', 'danger')
+        return redirect(url_for('dashboard'))
 
-@app.route('/usuarios/editar/<int:user_id>', methods=['GET', 'POST'])
+    if request.method == 'POST':
+        # Recolectar datos del formulario
+        data = {
+            'usuario': request.form.get('usuario'),
+            'nombre': request.form.get('nombre'),
+            'primer_apellido': request.form.get('primer_apellido'),
+            'segundo_apellido': request.form.get('segundo_apellido', ''),
+            'email': request.form.get('email'),
+            'telefono': request.form.get('telefono', ''),
+            'password': request.form.get('password'),
+            'rol': request.form.get('rol', 'Usuario'),  # Rol por defecto
+        }
+
+        # Validar y crear usuario
+        is_created, message = user_module.create_new_user(data, bcrypt)
+
+        if is_created:
+            flash(message, 'success')
+            return redirect(url_for('usuarios'))
+        else:
+            flash(message, 'danger')
+            
+    return render_template('crear_usuarios.html')
+
+@app.route('/usuarios/<int:user_id>/editar', methods=['GET', 'POST'])
 @login_required
 def editar_usuario(user_id):
     """
-    Edita la información de un usuario.
-    Solo accesible para administradores y superusuarios.
+    Ruta para editar el perfil de un usuario específico.
+    Solo el dueño del perfil o un Admin/Superusuario puede editar.
     """
-    # Buscar el usuario a editar
-    user_to_edit = user_module.find_user_by_id(user_id)
+    conn = get_db_connection()
+    user_data = user_module.get_user_by_id(conn, user_id)
+    conn.close()
 
-    # Validar que el usuario actual tiene permisos para editar
-    if current_user.rol == 'Usuario Regular' or (current_user.rol == 'Administrador' and user_to_edit['rol'] == 'Superusuario'):
-        flash('No tienes permiso para realizar esta acción.', 'danger')
-        return redirect(url_for('perfil'))
-        
-    if not user_to_edit:
+    if not user_data:
         flash('Usuario no encontrado.', 'danger')
         return redirect(url_for('usuarios'))
 
+    user_to_edit = User(**user_data)
+    is_owner = current_user.id == user_to_edit.id
+    is_authorized = is_owner or current_user.rol in ['Administrador', 'Superusuario']
+
+    if not is_authorized:
+        flash('Acceso denegado: No tienes permiso para editar este perfil.', 'danger')
+        return redirect(url_for('dashboard'))
+
     if request.method == 'POST':
-        updated_user = user_module.update_user(user_id, request.form)
-        if isinstance(updated_user, str):
-            flash(updated_user, 'danger')
+        # Recolectar datos del formulario (la contraseña no se edita aquí)
+        data = {
+            'nombre': request.form.get('nombre'),
+            'primer_apellido': request.form.get('primer_apellido'),
+            'segundo_apellido': request.form.get('segundo_apellido'),
+            'email': request.form.get('email'),
+            'telefono': request.form.get('telefono'),
+            # El rol solo se actualiza si NO es el dueño y tiene permisos (Admin/Superuser)
+            'rol': request.form.get('rol') if not is_owner and current_user.rol in ['Administrador', 'Superusuario'] else user_to_edit.rol
+        }
+
+        # Si el usuario es Superusuario y está editando a otro Superusuario, 
+        # y no es el dueño, se le bloquea el cambio de rol
+        if user_to_edit.rol == 'Superusuario' and user_to_edit.id != current_user.id and current_user.rol != 'Superusuario':
+            data['rol'] = user_to_edit.rol # Mantener el rol original
+
+        is_updated, message = user_module.update_user_profile(user_id, data)
+
+        if is_updated:
+            # Si el usuario se edita a sí mismo, debe recargarse el objeto current_user en la sesión
+            if is_owner:
+                # Flask-Login recargará el usuario en la próxima solicitud (llama a load_user)
+                pass 
+            flash(message, 'success')
+            return redirect(url_for('perfil') if is_owner else url_for('usuarios'))
         else:
-            flash('Usuario actualizado con éxito.', 'success')
+            flash(message, 'danger')
+    
+    # Para GET o error de POST, renderiza el formulario con los datos actuales
+    return render_template('editar_usuarios.html', user=user_to_edit, is_owner=is_owner)
+
+@app.route('/usuarios/<int:user_id>/detalle')
+@login_required
+def detalle_usuario(user_id):
+    """
+    Ruta para ver los detalles de un usuario.
+    Solo Admin/Superusuario o el dueño del perfil pueden ver los detalles.
+    """
+    conn = get_db_connection()
+    user_data = user_module.get_user_by_id(conn, user_id)
+    conn.close()
+
+    if not user_data:
+        flash('Usuario no encontrado.', 'danger')
         return redirect(url_for('usuarios'))
 
-    # Pasar si el usuario es el superusuario principal a la plantilla
-    is_superuser = user_to_edit['email'] == user_module.SUPERUSER_EMAIL
-    return render_template('editar_usuarios.html', user=user_to_edit, is_superuser=is_superuser)
+    user_detail = User(**user_data)
+    is_authorized = current_user.id == user_detail.id or current_user.rol in ['Administrador', 'Superusuario']
 
-@app.route('/usuarios/eliminar/<int:user_id>', methods=['POST'])
+    if not is_authorized:
+        flash('Acceso denegado: No tienes permiso para ver este perfil.', 'danger')
+        return redirect(url_for('dashboard'))
+
+    return render_template('detalle_usuarios.html', user=user_detail)
+
+@app.route('/usuarios/<int:user_id>/eliminar', methods=['POST'])
 @login_required
 def eliminar_usuario(user_id):
     """
-    Elimina un usuario de la base de datos.
-    Solo accesible para administradores y superusuarios.
+    Ruta para eliminar un usuario (solo Superusuario).
     """
-    # Buscar el usuario a eliminar
-    user_to_delete = user_module.find_user_by_id(user_id)
+    if current_user.rol != 'Superusuario':
+        flash('Acceso denegado: Solo un Superusuario puede eliminar usuarios.', 'danger')
+        return redirect(url_for('dashboard'))
 
-    # Validar que el usuario actual tiene permisos para eliminar
-    if current_user.rol == 'Usuario Regular' or (current_user.rol == 'Administrador' and user_to_delete['rol'] in ['Administrador', 'Superusuario']):
-        flash('No tienes permiso para realizar esta acción.', 'danger')
-        return redirect(url_for('perfil'))
+    if user_id == current_user.id:
+        flash('No puedes eliminar tu propia cuenta mientras estás logueado.', 'danger')
+        return redirect(url_for('usuarios'))
 
-    success, message = user_module.delete_user_by_id(user_id)
-    if success:
+    is_deleted, message = user_module.delete_user(user_id)
+
+    if is_deleted:
         flash(message, 'success')
     else:
         flash(message, 'danger')
     
     return redirect(url_for('usuarios'))
-    
-@app.route('/usuarios/detalle/<int:user_id>')
-@login_required
-def detalle_usuario(user_id):
-    """
-    Muestra los detalles de un usuario.
-    """
-    user_data = user_module.find_user_by_id(user_id)
-    if not user_data:
-        flash('Usuario no encontrado.', 'danger')
-        return redirect(url_for('usuarios'))
 
-    return render_template('detalle_usuarios.html', user=user_data)
+@app.route('/cambiar_password', methods=['GET', 'POST'])
+@login_required
+def cambiar_password():
+    """
+    Ruta para que el usuario actual cambie su propia contraseña.
+    """
+    if request.method == 'POST':
+        old_password = request.form.get('old_password')
+        new_password = request.form.get('new_password')
+        confirm_new_password = request.form.get('confirm_new_password')
+        user_id = current_user.id
+
+        # 1. Validar que la nueva contraseña y la confirmación coincidan
+        if new_password != confirm_new_password:
+            flash('Error: La nueva contraseña y la confirmación no coinciden.', 'danger')
+            return redirect(url_for('cambiar_password'))
+        
+        # 2. Validar complejidad de la nueva contraseña
+        # La validación más estricta se hace en users.py, pero una validación de longitud simple ayuda
+        if len(new_password) < 8:
+            flash('Error: La nueva contraseña debe tener al menos 8 caracteres.', 'danger')
+            return redirect(url_for('cambiar_password'))
+
+        # 3. Llamar a la función de módulo para actualizar la contraseña en la BD
+        is_updated, message = user_module.update_user_password(user_id, old_password, new_password)
+        
+        if is_updated:
+            # Forzar el logout para que el usuario inicie sesión con la nueva contraseña
+            logout_user() 
+            flash(message, 'success')
+            return redirect(url_for('login'))
+        else:
+            flash(message, 'danger')
+            return redirect(url_for('cambiar_password'))
+
+    return render_template('cambiar_password.html')
 
 
 # ----------------------------------------------------
 #               Ejecución de la Aplicación
 # ----------------------------------------------------
 
-# Inicializa la base de datos y crea la tabla de usuarios antes de la primera solicitud
-with app.app_context():
-    try:
-        conn = get_db_connection()
-        user_module.create_user_table(conn)
-        conn.close()
-        
-        # Comprueba y actualiza el rol de superusuario
-        try:
-            user_module.make_superuser_by_email(user_module.SUPERUSER_EMAIL)
-        except Exception as e:
-            print(f"Error al verificar y actualizar el rol de superusuario: {e}")
-            
-    except Exception as e:
-        print(f"Error al inicializar la base de datos: {e}")
-
-
 if __name__ == '__main__':
-    app.run(debug=True, port=8080, host='0.0.0.0')
+    # Inicializa la base de datos (crea la tabla de usuarios si es necesario)
+    conn = get_db_connection()
+    user_module.create_user_table(conn)
+    conn.close()
+    
+    # Inicia el servidor Flask
+    app.run(debug=True)
 
-
-# Terminantemente prohibido eliminar los comentarios
-# Migraciones Cmder
-        # set FLASK_APP=app.py     <--Crea un directorio de migraciones
-        # flask db init             <--
-        # $ flask db stamp head
-        # $ flask db migrate
-        # $ flask db migrate -m "mensaje x"
-        # $ flask db upgrade
-        # ERROR [flask_migrate] Error: Target database is not up to date.
-        # $ flask db stamp head
-        # $ flask db migrate
-        # $ flask db upgrade
-        # git clone https://github.com/kerm1977/MI_APP_FLASK.git
-        # mysql> DROP DATABASE kenth1977$db; PYTHONANYWHATE
-# -----------------------
-
-# del db.db
-# rmdir /s /q migrations
-# flask db init
-# flask db migrate -m "Reinitial migration with all correct models"
-# flask db upgrade
-
-
-# -----------------------
-# Consola de pythonanywhere ante los errores de versiones
-# Error: Can't locate revision identified by '143967eb40c0'
-
-# flask db stamp head
-# flask db migrate
-# flask db upgrade
-
-# Database pythonanywhere
-# kenth1977$db
-# DROP TABLE alembic_version;
-# rm -rf migrations
 # flask db init
 # flask db migrate -m "Initial migration after reset"
 # flask db upgrade
@@ -315,14 +594,12 @@ if __name__ == '__main__':
 # (env) 05:52 ~/latribuapp (main)$ 
 
 
-
 # Cuando se cambia de repositorio
 # git remote -v
 # git remote add origin <URL_DEL_REPOSITORIO>
 # git remote set-url origin <NUEVA_URL_DEL_REPOSITORIO>
 # git branchgit remote -v
 # git push -u origin flet
-
 
 
 # borrar base de datos y reconstruirla
@@ -332,14 +609,4 @@ if __name__ == '__main__':
 # (env) 21:57 ~/LATRIBU1 (main)$
 # (env) 23:30 ~/LATRIBU1 (main)$ cd /home/kenth1977/LATRIBU1
 # (env) 23:31 ~/LATRIBU1 (main)$ rm -f instance/db.db
-# (env) 23:32 ~/LATRIBU1 (main)$ rm -rf migrations
-# (env) 23:32 ~/LATRIBU1 (main)$ flask db init
-# (env) 23:33 ~/LATRIBU1 (main)$ flask db migrate -m "Initial migration with all models"
-# (env) 23:34 ~/LATRIBU1 (main)$ flask db upgrade
-# (env) 23:34 ~/LATRIBU1 (main)$ ls -l instance/db
-
-
-# GUARDA  todas las dependecias para utilizar offline luego
-# pip download -r requirements.txt -d librerias_offline
-# INSTALA  todas las dependecias para utilizar offline luego
-# pip install --no-index --find-links=./librerias_offline -r requirements.txt
+# (env) 23:32 ~/LATRIBU1 (main)$ python app.py

@@ -3,7 +3,22 @@ import sqlite3
 import re
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import bcrypt  # Importamos la instancia de bcrypt desde app.py
+# Importamos la instancia de bcrypt desde app.py (esto es necesario para usar bcrypt aquí)
+try:
+    from app import bcrypt, UserMixin  
+except ImportError:
+    # Manejo si se ejecuta users.py directamente, aunque en Flask se recomienda el import circular
+    # Definimos una clase UserMixin localmente para evitar errores de importación en este contexto
+    class UserMixin:
+        def is_authenticated(self):
+            return True
+        def is_active(self):
+            return True
+        def is_anonymous(self):
+            return False
+        def get_id(self):
+            return str(self.id)
+    pass 
 
 # ----------------------------------------------------
 #              Funciones de la Base de Datos
@@ -27,399 +42,384 @@ def create_user_table(conn):
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    usuario TEXT UNIQUE NOT NULL,
                     nombre TEXT NOT NULL,
                     primer_apellido TEXT NOT NULL,
-                    segundo_apellido TEXT NOT NULL,
-                    usuario TEXT UNIQUE NOT NULL,
+                    segundo_apellido TEXT,
                     email TEXT UNIQUE NOT NULL,
-                    telefono TEXT UNIQUE NOT NULL,
-                    password TEXT NOT NULL,
-                    rol TEXT NOT NULL DEFAULT 'Usuario Regular'
+                    telefono TEXT,
+                    password_hash TEXT NOT NULL,
+                    rol TEXT NOT NULL DEFAULT 'Usuario', -- Roles: Superusuario, Administrador, Usuario
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
             conn.commit()
             
-            # Crear el archivo de bandera para indicar que la tabla ya fue creada
-            with open(TABLE_CREATED_FLAG, 'w') as f:
-                f.write('Tabla creada')
+            # Crear el superusuario por defecto si no existe
+            user_data = get_user_by_email(SUPERUSER_EMAIL)
+            if not user_data:
+                # Usar una contraseña segura por defecto para el primer arranque
+                default_password = 'Password123' 
+                hashed_password = bcrypt.generate_password_hash(default_password).decode('utf-8')
                 
-            # Insertar un usuario administrador por defecto
-            # Este es un buen punto para que un usuario pueda probar la funcionalidad de administrador
-            hashed_password = bcrypt.generate_password_hash("admin123").decode('utf-8')
-            conn.execute(
-                "INSERT INTO users (nombre, primer_apellido, segundo_apellido, usuario, email, telefono, password, rol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                ('Admin', 'PrimerApellido', 'SegundoApellido', 'admin', 'admin@example.com', '12345678', hashed_password, 'Administrador')
-            )
-            conn.commit()
-
-            print("Tabla 'users' creada o ya existe.")
-        
+                cursor.execute('''
+                    INSERT INTO users (usuario, nombre, primer_apellido, segundo_apellido, email, telefono, password_hash, rol)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', ('superuser', 'Kenth', 'Villalobos', 'Ramirez', SUPERUSER_EMAIL, '8888-8888', hashed_password, 'Superusuario'))
+                conn.commit()
+                print(f"Superusuario '{SUPERUSER_EMAIL}' creado con contraseña por defecto: '{default_password}'")
+            
+            # Crear el archivo de bandera
+            os.makedirs(os.path.dirname(TABLE_CREATED_FLAG), exist_ok=True)
+            with open(TABLE_CREATED_FLAG, 'w') as f:
+                f.write('Tabla users creada')
+            
+            print("Tabla 'users' creada y Superusuario verificado/creado.")
+            
     except sqlite3.Error as e:
-        print(f"Error al crear la tabla: {e}")
-
-def add_new_user(form_data):
-    """
-    Añade un nuevo usuario a la base de datos.
-
-    Genera un nombre de usuario a partir de las iniciales y encripta la contraseña.
-    
-    Args:
-        form_data (dict): Un diccionario con los datos del formulario de registro.
-        
-    Returns:
-        sqlite3.Row or str or None: El registro del nuevo usuario si se crea correctamente,
-                                     o un mensaje de error si falla.
-    """
-    try:
-        # Importación diferida para evitar dependencia circular.
-        from app import get_db_connection
-        
-        # Obtener y limpiar datos del formulario
-        nombre = form_data.get('nombre', '').strip().title()
-        primer_apellido = form_data.get('primer_apellido', '').strip().title()
-        segundo_apellido = form_data.get('segundo_apellido', '').strip().title()
-        email = form_data.get('email', '').strip().lower()
-        telefono = form_data.get('telefono', '').strip()
-        password = form_data.get('password', '')
-        verificar_password = form_data.get('verificar_password', '')
-
-        # Validación: El nombre y el primer apellido no pueden estar vacíos
-        if not nombre or not primer_apellido:
-            return "Error: El nombre y el primer apellido son obligatorios."
-        
-        # Validación de campos obligatorios
-        if not all([nombre, primer_apellido, segundo_apellido, email, telefono, password, verificar_password]):
-            return "Error: Todos los campos son obligatorios."
-
-        if password != verificar_password:
-            return "Error: Las contraseñas no coinciden."
-            
-        # Validación de teléfono: solo números y 8 dígitos
-        if not re.match(r'^\d{8}$', telefono):
-            return "Error: El teléfono debe contener exactamente 8 dígitos numéricos."
-        
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Generar nombre de usuario de forma automática con un sufijo incremental
-        base_username = f"{nombre[0]}{primer_apellido}{segundo_apellido}".lower()
-        username_to_check = base_username
-        counter = 1
-
-        while True:
-            # Comprobar si el nombre de usuario ya existe en la base de datos
-            cursor.execute("SELECT 1 FROM users WHERE usuario = ?", (username_to_check,))
-            if not cursor.fetchone():
-                # El nombre de usuario es único, podemos usarlo
-                break
-            # Si existe, agregar un número para intentar de nuevo
-            username_to_check = f"{base_username}{counter}"
-            counter += 1
-        
-        # Encriptar la contraseña
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        
-        try:
-            # Ahora, insertar el usuario con el nombre de usuario ya validado
-            cursor.execute(
-                "INSERT INTO users (nombre, primer_apellido, segundo_apellido, usuario, email, telefono, password) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (nombre, primer_apellido, segundo_apellido, username_to_check, email, telefono, hashed_password)
-            )
-            conn.commit()
-            
-            # Obtener el registro completo del usuario recién insertado
-            new_user = conn.execute("SELECT * FROM users WHERE usuario = ?", (username_to_check,)).fetchone()
-            
-            conn.close()
-            return new_user
-
-        except sqlite3.IntegrityError as e:
-            # Manejo de errores específico para email y teléfono
-            error_message = str(e)
-            if "email" in error_message:
-                return "Error: El correo electrónico ya está registrado."
-            elif "telefono" in error_message:
-                return "Error: El teléfono ya está registrado."
-            else:
-                print(f"Error de integridad inesperado: {e}")
-                return "Error inesperado al registrar el usuario. Por favor, inténtelo de nuevo más tarde."
+        print(f"Error de SQLite al crear la tabla 'users' o superusuario: {e}")
     except Exception as e:
-        print(f"Error inesperado al registrar el usuario: {e}")
-        return "Error inesperado al registrar el usuario. Por favor, inténtelo de nuevo más tarde."
+        print(f"Error inesperado al crear la tabla 'users' o superusuario: {e}")
 
-def find_user_by_id(user_id):
+
+def get_db_connection():
     """
-    Busca un usuario en la base de datos por su ID.
+    Establece una conexión a la base de datos SQLite.
+    
+    Returns:
+        sqlite3.Connection: El objeto de conexión.
+    """
+    DB_PATH = 'database/db.db'
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row  # Permite acceder a las columnas por nombre
+    return conn
+
+# ----------------------------------------------------
+#               Clase User para Flask-Login
+# ----------------------------------------------------
+
+class User(UserMixin):
+    """Clase para representar a un usuario autenticado en Flask-Login."""
+    def __init__(self, id, usuario, nombre, primer_apellido, segundo_apellido, email, telefono, password_hash, rol):
+        self.id = id
+        self.usuario = usuario
+        self.nombre = nombre
+        self.primer_apellido = primer_apellido
+        self.segundo_apellido = segundo_apellido
+        self.email = email
+        self.telefono = telefono
+        self.password_hash = password_hash
+        self.rol = rol
+
+    def get_id(self):
+        """Devuelve el ID de usuario como cadena para Flask-Login."""
+        return str(self.id)
+
+
+def get_user_by_id(user_id):
+    """
+    Busca un usuario por su ID y devuelve una instancia de User o None.
     
     Args:
         user_id (int): El ID del usuario.
         
     Returns:
-        sqlite3.Row or None: El registro del usuario si se encuentra, de lo contrario None.
+        User or None: Instancia de User o None si no se encuentra.
     """
     try:
-        from app import get_db_connection
         conn = get_db_connection()
         user_data = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         conn.close()
-        return user_data
+        
+        if user_data:
+            return User(
+                id=user_data['id'],
+                usuario=user_data['usuario'],
+                nombre=user_data['nombre'],
+                primer_apellido=user_data['primer_apellido'],
+                segundo_apellido=user_data['segundo_apellido'],
+                email=user_data['email'],
+                telefono=user_data['telefono'],
+                password_hash=user_data['password_hash'],
+                rol=user_data['rol']
+            )
+        return None
     except Exception as e:
-        print(f"Error al buscar usuario por ID: {e}")
+        print(f"Error al obtener usuario por ID {user_id}: {e}")
         return None
 
-def find_all_users():
+
+def get_user_by_email(email):
     """
-    Busca todos los usuarios en la base de datos.
+    Busca un usuario por su email y devuelve los datos brutos.
     
+    Args:
+        email (str): El email del usuario.
+        
     Returns:
-        list: Una lista de objetos sqlite3.Row con todos los usuarios.
+        sqlite3.Row or None: Los datos del usuario o None si no se encuentra.
     """
     try:
-        from app import get_db_connection
         conn = get_db_connection()
-        users_data = conn.execute("SELECT * FROM users").fetchall()
+        user_data = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        conn.close()
+        return user_data
+    except Exception as e:
+        print(f"Error al obtener usuario por email {email}: {e}")
+        return None
+
+
+# ----------------------------------------------------
+#                  Funciones de Lógica
+# ----------------------------------------------------
+
+def validate_password(password):
+    """
+    Valida la complejidad de la contraseña.
+    - Mínimo 8 caracteres.
+    - Al menos una letra mayúscula.
+    - Al menos una letra minúscula.
+    - Al menos un número.
+    
+    Args:
+        password (str): La contraseña a validar.
+        
+    Returns:
+        bool: True si es válida, False en caso contrario.
+        str: Mensaje de error si es inválida, cadena vacía si es válida.
+    """
+    if len(password) < 8:
+        return False, "La contraseña debe tener al menos 8 caracteres."
+    if not re.search(r'[A-Z]', password):
+        return False, "La contraseña debe contener al menos una letra mayúscula."
+    if not re.search(r'[a-z]', password):
+        return False, "La contraseña debe contener al menos una letra minúscula."
+    if not re.search(r'[0-9]', password):
+        return False, "La contraseña debe contener al menos un número."
+        
+    return True, ""
+
+
+def register_user(usuario, nombre, primer_apellido, segundo_apellido, email, telefono, password):
+    """
+    Registra un nuevo usuario en la base de datos.
+    
+    Args:
+        usuario (str): Nombre de usuario.
+        nombre (str): Nombre real.
+        primer_apellido (str): Primer apellido.
+        segundo_apellido (str): Segundo apellido (opcional).
+        email (str): Email.
+        telefono (str): Teléfono (opcional).
+        password (str): Contraseña sin hashear.
+        
+    Returns:
+        tuple: (bool, str) - Éxito/Fallo y mensaje.
+    """
+    try:
+        # 1. Validar la contraseña
+        is_valid, msg = validate_password(password)
+        if not is_valid:
+            return False, msg
+
+        conn = get_db_connection()
+        
+        # 2. Verificar si el email o el usuario ya existen
+        if get_user_by_email(email):
+            conn.close()
+            return False, 'Error: El email ya está registrado.'
+        
+        # Verificar si el nombre de usuario ya existe
+        if conn.execute("SELECT id FROM users WHERE usuario = ?", (usuario,)).fetchone():
+            conn.close()
+            return False, 'Error: El nombre de usuario ya está en uso.'
+
+        # 3. Hashear la contraseña
+        # Asegúrate de que bcrypt esté disponible
+        if 'bcrypt' not in globals() and 'bcrypt' not in locals():
+            try:
+                from app import bcrypt 
+            except ImportError:
+                print("Error: La instancia de bcrypt no está disponible en users.py")
+                conn.close()
+                return False, 'Error interno: El módulo de encriptación no está disponible.'
+                
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        
+        # 4. Insertar el nuevo usuario
+        conn.execute('''
+            INSERT INTO users (usuario, nombre, primer_apellido, segundo_apellido, email, telefono, password_hash, rol)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (usuario, nombre, primer_apellido, segundo_apellido, email, telefono, hashed_password, 'Usuario'))
+        
+        conn.commit()
+        conn.close()
+        
+        return True, 'Usuario creado exitosamente.'
+        
+    except sqlite3.Error as e:
+        print(f"Error de SQLite al registrar usuario: {e}")
+        return False, 'Error de base de datos al registrar usuario.'
+    except Exception as e:
+        print(f"Error inesperado al registrar usuario: {e}")
+        return False, 'Error inesperado al intentar registrar usuario.'
+
+
+def update_user(user_id, nombre, primer_apellido, segundo_apellido, email, telefono, rol=None):
+    """
+    Actualiza los datos de un usuario existente.
+    
+    Args:
+        user_id (int): ID del usuario a actualizar.
+        nombre (str): Nombre.
+        primer_apellido (str): Primer apellido.
+        segundo_apellido (str): Segundo apellido.
+        email (str): Email.
+        telefono (str): Teléfono.
+        rol (str, optional): Rol del usuario (solo si se necesita actualizar).
+        
+    Returns:
+        tuple: (bool, str) - Éxito/Fallo y mensaje.
+    """
+    try:
+        conn = get_db_connection()
+        
+        # 1. Verificar si el nuevo email ya existe en otro usuario
+        existing_user = conn.execute("SELECT id FROM users WHERE email = ? AND id != ?", (email, user_id)).fetchone()
+        if existing_user:
+            conn.close()
+            return False, 'Error: El nuevo email ya pertenece a otra cuenta.'
+
+        # 2. Construir la consulta de actualización
+        params = [nombre, primer_apellido, segundo_apellido, email, telefono]
+        query = "UPDATE users SET nombre = ?, primer_apellido = ?, segundo_apellido = ?, email = ?, telefono = ?"
+
+        if rol is not None:
+            query += ", rol = ?"
+            params.append(rol)
+            
+        query += " WHERE id = ?"
+        params.append(user_id)
+        
+        # 3. Ejecutar la actualización
+        conn.execute(query, params)
+        conn.commit()
+        conn.close()
+        
+        return True, 'Información de usuario actualizada exitosamente.'
+        
+    except sqlite3.Error as e:
+        print(f"Error de SQLite al actualizar usuario ID {user_id}: {e}")
+        return False, 'Error de base de datos al actualizar usuario.'
+    except Exception as e:
+        print(f"Error inesperado al actualizar usuario ID {user_id}: {e}")
+        return False, 'Error inesperado al intentar actualizar usuario.'
+
+
+def get_all_users():
+    """
+    Obtiene todos los usuarios de la base de datos, ordenados por nombre.
+    
+    Returns:
+        list: Lista de objetos sqlite3.Row con los datos de los usuarios.
+    """
+    try:
+        conn = get_db_connection()
+        users_data = conn.execute("SELECT id, usuario, nombre, primer_apellido, segundo_apellido, email, telefono, rol FROM users ORDER BY nombre, primer_apellido").fetchall()
         conn.close()
         return users_data
     except Exception as e:
-        print(f"Error al buscar todos los usuarios: {e}")
+        print(f"Error al obtener todos los usuarios: {e}")
         return []
 
-def update_user(user_id, form_data):
-    """
-    Actualiza la información de un usuario en la base de datos.
-    
-    Args:
-        user_id (int): El ID del usuario a actualizar.
-        form_data (dict): Diccionario con los datos del formulario de edición.
-        
-    Returns:
-        sqlite3.Row or str: El registro del usuario actualizado o un mensaje de error.
-    """
-    try:
-        from app import get_db_connection
-        conn = get_db_connection()
-        
-        # Obtener los datos del formulario de forma segura y validar que no estén vacíos
-        nombre = form_data.get('nombre', '').strip().title()
-        primer_apellido = form_data.get('primer_apellido', '').strip().title()
-        segundo_apellido = form_data.get('segundo_apellido', '').strip().title()
-        email = form_data.get('email', '').strip().lower()
-        telefono = form_data.get('telefono', '').strip()
-        rol = form_data.get('rol', '').strip()
 
-        # Validación de campos obligatorios
-        if not nombre:
-            return "Error: El nombre es obligatorio."
-        if not primer_apellido:
-            return "Error: El primer apellido es obligatorio."
-        if not segundo_apellido:
-            return "Error: El segundo apellido es obligatorio."
-        if not email:
-            return "Error: El correo electrónico es obligatorio."
-        if not telefono:
-            return "Error: El teléfono es obligatorio."
-        if not rol:
-            return "Error: El rol es obligatorio."
-            
-        # Validación de teléfono
-        if not re.match(r'^\d{8}$', telefono):
-            return "Error: El teléfono debe contener exactamente 8 dígitos numéricos."
-            
-        # Verificar si el correo o teléfono ya existen en otro usuario
-        existing_user = conn.execute("SELECT id FROM users WHERE (email = ? OR telefono = ?) AND id != ?", (email, telefono, user_id)).fetchone()
-        if existing_user:
-            return "Error: El correo electrónico o el teléfono ya están en uso por otro usuario."
-            
-        cursor = conn.cursor()
-        
-        # No permitir el cambio de rol si es el superusuario fijo
-        user_to_edit = find_user_by_id(user_id)
-        if user_to_edit and user_to_edit['email'] == SUPERUSER_EMAIL and rol != 'Superusuario':
-            return "Error: No se puede cambiar el rol del superusuario principal."
-            
-        cursor.execute(
-            "UPDATE users SET nombre = ?, primer_apellido = ?, segundo_apellido = ?, email = ?, telefono = ?, rol = ? WHERE id = ?",
-            (nombre, primer_apellido, segundo_apellido, email, telefono, rol, user_id)
-        )
-        conn.commit()
-        
-        updated_user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-        conn.close()
-        
-        return updated_user
-
-    except Exception as e:
-        print(f"Error al actualizar el usuario: {e}")
-        return "Error inesperado al actualizar el usuario. Por favor, inténtelo de nuevo más tarde."
-        
-def delete_user_by_id(user_id):
+def delete_user(user_id):
     """
     Elimina un usuario de la base de datos por su ID.
     
     Args:
-        user_id (int): El ID del usuario a eliminar.
+        user_id (int): ID del usuario a eliminar.
         
     Returns:
-        tuple: (True, mensaje de éxito) si se elimina correctamente, o (False, mensaje de error) si falla.
+        tuple: (bool, str) - Éxito/Fallo y mensaje.
     """
     try:
-        from app import get_db_connection
         conn = get_db_connection()
-        
-        # No permitir la eliminación del único superusuario o si es el superusuario principal
-        user_to_delete = find_user_by_id(user_id)
-        if user_to_delete and user_to_delete['email'] == SUPERUSER_EMAIL:
+        # Verificar si el usuario existe antes de intentar eliminar
+        user_data = conn.execute("SELECT id FROM users WHERE id = ?", (user_id,)).fetchone()
+        if not user_data:
             conn.close()
-            return False, 'No puedes eliminar al superusuario principal.'
-
-        result = conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            return False, 'Error: Usuario no encontrado.'
+        
+        # Eliminar el usuario
+        conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
         conn.close()
         
-        if result.rowcount == 1:
-            return True, 'Usuario eliminado exitosamente.'
-        else:
-            return False, 'Usuario no encontrado.'
+        return True, 'Usuario eliminado exitosamente.'
+        
+    except sqlite3.Error as e:
+        print(f"Error de SQLite al eliminar usuario ID {user_id}: {e}")
+        return False, 'Error de base de datos al eliminar usuario.'
     except Exception as e:
-        print(f"Error al eliminar usuario: {e}")
-        return False, 'Error inesperado al eliminar el usuario.'
+        print(f"Error inesperado al eliminar usuario ID {user_id}: {e}")
+        return False, 'Error inesperado al intentar eliminar usuario.'
 
-def find_user_by_id(user_id):
+
+def change_user_password(user_id, old_password, new_password):
     """
-    Busca un usuario en la base de datos por su ID.
+    Cambia la contraseña de un usuario.
     
     Args:
-        user_id (int): El ID del usuario.
+        user_id (int): ID del usuario a modificar.
+        old_password (str): Contraseña actual del usuario.
+        new_password (str): Nueva contraseña.
         
     Returns:
-        sqlite3.Row or None: El registro del usuario si se encuentra, de lo contrario None.
+        tuple: (bool, str) - Éxito/Fallo y mensaje.
     """
     try:
-        from app import get_db_connection
-        conn = get_db_connection()
-        user_data = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-        conn.close()
-        return user_data
-    except Exception as e:
-        print(f"Error al buscar usuario por ID: {e}")
-        return None
+        # 1. Validar la nueva contraseña
+        is_valid, msg = validate_password(new_password)
+        if not is_valid:
+            return False, msg
 
-def verify_user(user_input, password):
-    """
-    Verifica las credenciales de inicio de sesión de un usuario.
-    
-    Busca al usuario por su nombre de usuario, correo electrónico o teléfono.
-    
-    Args:
-        user_input (str): Nombre de usuario, email o teléfono del usuario.
-        password (str): La contraseña proporcionada por el usuario.
-        
-    Returns:
-        sqlite3.Row or None: El registro del usuario si las credenciales son válidas,
-                              de lo contrario None.
-    """
-    try:
-        from app import get_db_connection, bcrypt
         conn = get_db_connection()
-        cursor = conn.cursor()
         
-        # Normalizar el input del usuario
-        user_input = user_input.strip()
+        # Obtener datos del usuario, incluyendo el hash de la contraseña
+        user_data = conn.execute("SELECT password_hash FROM users WHERE id = ?", (user_id,)).fetchone()
+        
+        if not user_data:
+            conn.close()
+            return False, 'Error: Usuario no encontrado.'
 
-        # Usar expresiones regulares para determinar el tipo de entrada
-        is_email = re.match(r'^[^@]+@[^@]+\.[^@]+$', user_input)
-        is_phone = re.match(r'^\d{8}$', user_input)
+        # Asegúrate de que bcrypt esté disponible
+        if 'bcrypt' not in globals() and 'bcrypt' not in locals():
+            try:
+                from app import bcrypt # Intento de importación final
+            except ImportError:
+                print("Error: La instancia de bcrypt no está disponible en users.py")
+                conn.close()
+                return False, 'Error interno: El módulo de encriptación no está disponible.'
         
-        # Preparar la consulta de la base de datos basada en el tipo de entrada
-        query = ""
-        params = ()
-        if is_email:
-            query = "SELECT * FROM users WHERE email = ?"
-            params = (user_input.lower(),)
-        elif is_phone:
-            query = "SELECT * FROM users WHERE telefono = ?"
-            params = (user_input,)
-        else: # Si no es un email o un teléfono, se asume que es un nombre de usuario
-            query = "SELECT * FROM users WHERE usuario = ?"
-            params = (user_input.lower(),)
+        hashed_password_db = user_data['password_hash']
         
-        if not query:
-            return None
+        # 2. Verificar la contraseña actual
+        if not bcrypt.check_password_hash(hashed_password_db, old_password):
+            conn.close()
+            return False, 'Error: La contraseña actual es incorrecta.'
             
-        user_data = cursor.execute(query, params).fetchone()
+        # 3. Hashear la nueva contraseña
+        new_hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+        
+        # 4. Actualizar la contraseña en la base de datos
+        conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_hashed_password, user_id))
+        conn.commit()
         conn.close()
         
-        if user_data:
-            # Compara la contraseña encriptada
-            if bcrypt.check_password_hash(user_data['password'], password):
-                return user_data
-        
-        return None
+        return True, 'Contraseña actualizada exitosamente. Por favor, vuelve a iniciar sesión.'
         
     except Exception as e:
-        print(f"Error al verificar el usuario: {e}")
-        return None
-
-def make_admin_by_email(email):
-    """
-    Convierte a un usuario existente en administrador buscándolo por correo electrónico.
-    
-    Args:
-        email (str): El correo electrónico del usuario a convertir.
-        
-    Returns:
-        tuple: (True, mensaje de éxito) si la actualización es exitosa, 
-               o (False, mensaje de error) si el usuario no es encontrado.
-    """
-    try:
-        from app import get_db_connection
-        conn = get_db_connection()
-        
-        # Buscar el usuario por su correo electrónico
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        
-        if user:
-            # Actualizar el rol del usuario a 'Administrador'
-            conn.execute("UPDATE users SET rol = 'Administrador' WHERE email = ?", (email,))
-            conn.commit()
-            conn.close()
-            return True, f'El usuario con el correo {email} ha sido convertido en Administrador.'
-        else:
-            conn.close()
-            return False, f'Error: No se encontró ningún usuario con el correo {email}.'
-            
-    except Exception as e:
-        print(f"Error al actualizar el rol del usuario: {e}")
-        return False, 'Error inesperado al intentar actualizar el rol del usuario.'
-        
-def make_superuser_by_email(email):
-    """
-    Convierte a un usuario existente en superusuario buscándolo por correo electrónico.
-    
-    Args:
-        email (str): El correo electrónico del usuario a convertir.
-        
-    Returns:
-        tuple: (True, mensaje de éxito) si la actualización es exitosa, 
-               o (False, mensaje de error) si el usuario no es encontrado.
-    """
-    try:
-        from app import get_db_connection
-        conn = get_db_connection()
-        
-        # Buscar el usuario por su correo electrónico
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-        
-        if user:
-            # Actualizar el rol del usuario a 'Superusuario'
-            conn.execute("UPDATE users SET rol = 'Superusuario' WHERE email = ?", (email,))
-            conn.commit()
-            conn.close()
-            return True, f'El usuario con el correo {email} ha sido convertido en Superusuario.'
-        else:
-            conn.close()
-            return False, f'Error: No se encontró ningún usuario con el correo {email}.'
-            
-    except Exception as e:
-        print(f"Error al actualizar el rol del usuario: {e}")
-        return False, 'Error inesperado al intentar actualizar el rol del usuario.'
+        # En caso de error inesperado, registrarlo
+        print(f"Error al actualizar la contraseña del usuario ID {user_id}: {e}")
+        return False, 'Error inesperado al intentar actualizar la contraseña.'

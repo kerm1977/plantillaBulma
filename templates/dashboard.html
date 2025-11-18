@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Control - {{ super() }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title">Bienvenido al Panel de Control</h1>
+        <h2 class="subtitle">Hola, {{ current_user.nombre }} {{ current_user.primer_apellido }}</h2>
+        
+        <div class="columns is-multiline mt-5">
+            <!-- Tarjeta de Perfil -->
+            <div class="column is-4">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="media">
+                            <div class="media-left">
+                                <figure class="image is-48x48">
+                                    <i class="fas fa-user-circle fa-3x"></i>
+                                </figure>
+                            </div>
+                            <div class="media-content">
+                                <p class="title is-4">{{ current_user.nombre }} {{ current_user.primer_apellido }}</p>
+                                <p class="subtitle is-6">@{{ current_user.usuario }}</p>
+                            </div>
+                        </div>
+
+                        <div class="content">
+                            <p><strong>Rol:</strong> {{ current_user.rol }}</p>
+                            <p><strong>Email:</strong> {{ current_user.email }}</p>
+                            {% if current_user.telefono %}
+                            <p><strong>Teléfono:</strong> {{ current_user.telefono }}</p>
+                            {% endif %}
+                            <br>
+                            <a href="{{ url_for('perfil') }}" class="button is-primary is-fullwidth">
+                                <span class="icon">
+                                    <i class="fas fa-user-edit"></i>
+                                </span>
+                                <span>Editar Perfil</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones Rápidas -->
+            <div class="column is-4">
+                <div class="card">
+                    <header class="card-header">
+                        <p class="card-header-title">
+                            <span class="icon"><i class="fas fa-bolt"></i></span>
+                            <span>Acciones Rápidas</span>
+                        </p>
+                    </header>
+                    <div class="card-content">
+                        <div class="buttons are-medium is-flex is-flex-direction-column">
+                            {% if current_user.rol in ['Superusuario', 'Administrador'] %}
+                            <a href="{{ url_for('usuarios') }}" class="button is-link is-fullwidth">
+                                <span class="icon"><i class="fas fa-users"></i></span>
+                                <span>Gestión de Usuarios</span>
+                            </a>
+                            <a href="{{ url_for('crear_usuarios') }}" class="button is-info is-fullwidth">
+                                <span class="icon"><i class="fas fa-user-plus"></i></span>
+                                <span>Crear Usuario</span>
+                            </a>
+                            {% endif %}
+                            <a href="{{ url_for('cambiar_password') }}" class="button is-warning is-fullwidth">
+                                <span class="icon"><i class="fas fa-key"></i></span>
+                                <span>Cambiar Contraseña</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="column is-4">
+                <div class="card">
+                    <header class="card-header">
+                        <p class="card-header-title">
+                            <span class="icon"><i class="fas fa-chart-bar"></i></span>
+                            <span>Estadísticas</span>
+                        </p>
+                    </header>
+                    <div class="card-content">
+                        <div class="content">
+                            <p><i class="fas fa-users"></i> <strong>Total de Usuarios:</strong> {{ total_usuarios if total_usuarios else 0 }}</p>
+                            <p><i class="fas fa-user-shield"></i> <strong>Administradores:</strong> {{ admin_count if admin_count else 0 }}</p>
+                            <p><i class="fas fa-user-tie"></i> <strong>Superusuarios:</strong> {{ superuser_count if superuser_count else 0 }}</p>
+                            <p><i class="fas fa-user"></i> <strong>Usuarios Normales:</strong> {{ user_count if user_count else 0 }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

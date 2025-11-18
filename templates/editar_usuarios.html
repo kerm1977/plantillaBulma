@@ -1,92 +1,95 @@
 {% extends "base.html" %}
 
-{% block title %}Editar Usuario{% endblock %}
+{% block title %}Editar Perfil{% endblock %}
 
 {% block content %}
-
 <div class="container mt-6">
-<div class="columns is-centered">
-<div class="column is-5">
-<h1 class="title has-text-centered has-text-warning">Editar Usuario</h1>
-{% if user %}
-<form method="POST">
-<div class="field">
-<label class="label">Nombre</label>
-<div class="control">
-<input class="input is-rounded" type="text" name="nombre" value="{{ user.nombre }}" required>
-</div>
-</div>
-
-            <div class="field">
-                <label class="label">Primer Apellido</label>
-                <div class="control">
-                    <input class="input is-rounded" type="text" name="primer_apellido" value="{{ user.primer_apellido }}" required>
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="label">Segundo Apellido</label>
-                <div class="control">
-                    <input class="input is-rounded" type="text" name="segundo_apellido" value="{{ user.segundo_apellido }}" required>
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="label">Usuario</label>
-                <div class="control">
-                    <input class="input is-rounded" type="text" value="{{ user.usuario }}" disabled>
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="label">Email</label>
-                <div class="control has-icons-left">
-                    <input class="input is-rounded" type="email" name="email" value="{{ user.email }}" required>
-                    <span class="icon is-small is-left"><i class="fas fa-envelope"></i></span>
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="label">Teléfono</label>
-                <div class="control has-icons-left">
-                    <input class="input is-rounded" type="tel" name="telefono" value="{{ user.telefono }}" maxlength="8" pattern="^\d{8}$" title="El teléfono debe contener exactamente 8 dígitos numéricos" required>
-                    <span class="icon is-small is-left"><i class="fas fa-phone"></i></span>
-                </div>
-            </div>
-
-            <div class="field">
-                <label class="label">Rol</label>
-                <div class="control">
-                    <div class="select is-fullwidth is-rounded">
-                        <select name="rol" required {% if is_superuser %}disabled{% endif %}>
-                            <option value="Usuario Regular" {% if user.rol == 'Usuario Regular' %}selected{% endif %}>Usuario Regular</option>
-                            <option value="Administrador" {% if user.rol == 'Administrador' %}selected{% endif %}>Administrador</option>
-                            <option value="Superusuario" {% if user.rol == 'Superusuario' %}selected{% endif %}>Superusuario</option>
-                        </select>
+    <div class="columns is-centered">
+        <div class="column is-6-tablet is-5-desktop is-4-widescreen">
+            <h1 class="title has-text-centered has-text-warning">
+                Editar Perfil de {% if is_owner %}Mi Cuenta{% else %}{{ user.usuario }}{% endif %}
+            </h1>
+            <div class="box custom-box">
+                <form method="POST">
+                    
+                    <div class="field">
+                        <label class="label has-text-warning">Nombre</label>
+                        <div class="control">
+                            <input class="input is-rounded" type="text" name="nombre" value="{{ request.form.get('nombre', user.nombre) }}" required>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <div class="field is-grouped is-grouped-multiline is-justify-content-center">
-                <p class="control">
-                    <button class="button is-warning is-rounded is-fullwidth-mobile mb-3-mobile" type="submit">
-                        <span class="icon"><i class="fas fa-save"></i></span>
-                        <span>Guardar Cambios</span>
-                    </button>
-                </p>
-                <p class="control mb-6">
-                    <a href="{{ url_for('usuarios') }}" class="button is-light is-rounded is-fullwidth-mobile mb-3-mobile">
-                        <span class="icon"><i class="fas fa-arrow-left"></i></span>
-                        <span>Cancelar</span>
+                    <div class="field">
+                        <label class="label has-text-warning">Primer Apellido</label>
+                        <div class="control">
+                            <input class="input is-rounded" type="text" name="primer_apellido" value="{{ request.form.get('primer_apellido', user.primer_apellido) }}" required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label has-text-warning">Segundo Apellido</label>
+                        <div class="control">
+                            <input class="input is-rounded" type="text" name="segundo_apellido" value="{{ request.form.get('segundo_apellido', user.segundo_apellido) }}" required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label has-text-warning">Email</label>
+                        <div class="control">
+                            <input class="input is-rounded" type="email" name="email" value="{{ request.form.get('email', user.email) }}" required>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="label has-text-warning">Teléfono</label>
+                        <div class="control">
+                            <input class="input is-rounded" type="text" name="telefono" value="{{ request.form.get('telefono', user.telefono) }}" required>
+                        </div>
+                    </div>
+                    
+                    <!-- Campo de Rol: Solo visible y editable si el usuario actual es Admin/Superuser -->
+                    {% if can_edit_role %}
+                    <div class="field">
+                        <label class="label has-text-danger">Rol de Usuario</label>
+                        <div class="control">
+                            <div class="select is-fullwidth is-rounded">
+                                <select name="rol" {% if user.rol == 'Superusuario' and not current_user.rol == 'Superusuario' %}disabled{% endif %}>
+                                    {% for role in roles %}
+                                        <option value="{{ role }}" {% if role == user.rol %}selected{% endif %}>
+                                            {{ role }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% if user.rol == 'Superusuario' and not current_user.rol == 'Superusuario' %}
+                                <p class="help is-danger">Solo un Superusuario puede cambiar el rol de otro Superusuario.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="field is-grouped is-grouped-centered mt-5">
+                        <div class="control">
+                            <button class="button is-primary is-rounded is-large" type="submit">
+                                <span class="icon"><i class="fas fa-save"></i></span>
+                                <span>Guardar Cambios</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                {% if is_owner %}
+                <hr>
+                <div class="has-text-centered">
+                    <!-- Ahora apunta a la ruta 'cambiar_password' en app.py -->
+                    <a href="{{ url_for('cambiar_password') }}" class="button is-danger is-outlined is-rounded is-small">
+                        <span class="icon"><i class="fas fa-key"></i></span>
+                        <span>Cambiar Contraseña</span>
                     </a>
-                </p>
+                </div>
+                {% endif %}
             </div>
-        </form>
-        {% else %}
-        <p class="has-text-centered">No se pudo cargar la información del usuario.</p>
-        {% endif %}
+        </div>
     </div>
-</div>
-
 </div>
 {% endblock %}

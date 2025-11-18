@@ -18,9 +18,15 @@
 <p><strong>Rol:</strong> {{ user.rol | title }}</p>
 </div>
 <div class="has-text-centered mt-5">
-<a href="{{ url_for('editar_usuario', user_id=user.id) }}" class="button is-warning is-rounded is-normal is-fullwidth-mobile">
+<a href="{{ url_for('editar_usuario', user_id=user.id) }}" class="button is-warning is-rounded is-normal is-fullwidth-mobile mb-3">
 <span class="icon"><i class="fas fa-edit"></i></span>
 <span>Editar mi perfil</span>
+</a>
+    
+<!-- NUEVO: Botón para Cambiar Contraseña -->
+<a href="{{ url_for('change_password') }}" class="button is-danger is-rounded is-normal is-fullwidth-mobile">
+    <span class="icon"><i class="fas fa-key"></i></span>
+    <span>Cambiar contraseña</span>
 </a>
 </div>
 {% else %}
